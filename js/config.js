@@ -94,7 +94,11 @@ window.GLOBE_CONFIG = {
       "https://epic.gsfc.nasa.gov/api/natural",
       "https://api.nasa.gov/EPIC/api/natural?api_key=DEMO_KEY",
     ],
-    imageUrl: "https://epic.gsfc.nasa.gov/archive/natural/{y}/{m}/{d}/png/{image}.png",
+    // JPG (1024 px) latautuu nopeasti; varalla sama kuva NASAn API-palvelun kautta
+    imageUrls: [
+      "https://epic.gsfc.nasa.gov/archive/natural/{y}/{m}/{d}/jpg/{image}.jpg",
+      "https://api.nasa.gov/EPIC/archive/natural/{y}/{m}/{d}/jpg/{image}.jpg?api_key=DEMO_KEY",
+    ],
   },
 
   // Uusin ilmakuva (ortokuva) Linnanmaalta: Maanmittauslaitoksen avoin rajapinta, CC BY 4.0.

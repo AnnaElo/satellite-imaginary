@@ -20,7 +20,6 @@
     epic: $("epic"),
     epicImg: document.querySelector("#epic img"),
     epicCap: document.querySelector("#epic .epic-cap"),
-    aerialCap: $("aerial-cap"),
     info: $("info"),
     reticle: $("reticle"),
     leader: $("leader"),
@@ -80,6 +79,9 @@
   });
   const scene = viewer.scene;
   const camera = viewer.camera;
+  // Ulkoasuvaihtoehto: ?look=b himmentää kampuksen ilmakuvaa, oletus (a) tekee laatikoista peittävämmät
+  const look = (params.get("look") || C.look || "a").toLowerCase();
+  document.body.classList.add(`look-${look}`);
   // Tarkkuus: ?light = kevyempi tila heikoille koneille. Muuten enintään 2x näytön tiheys.
   let light = params.has("light") || params.has("kevyt");
   function applyQuality() {
@@ -246,6 +248,10 @@
       layers.addImageryProvider(provider);
     }
 
+    if (look === "b") {
+      // Versio B: kampuksen ilmakuva himmeämmäksi ja vähemmän kontrastiseksi
+      for (const l of aerialLayers) { l.brightness = 0.7; l.contrast = 0.8; l.saturation = 0.6; }
+    }
     updateFooter();
     updatePanel();
     if (mode === "online") preloadTarget();
@@ -392,66 +398,87 @@
     }
   });
 
-  async function run() {
+  // Esityksen vaiheet: epic → spin → finland → oulu → campus → out → epic ...
+  // run(start) aloittaa annetusta vaiheesta (siirtymäpainikkeet oikeassa yläkulmassa).
+  let stage = null;
+  function setStage(st) {
+    stage = st;
+    const group = { epic: "earth", spin: "earth", out: "earth", finland: "oulu", oulu: "oulu", campus: "campus" }[st];
+    ui.panel.querySelectorAll("button[data-go]").forEach((b) =>
+      b.setAttribute("aria-pressed", String(b.dataset.go === group)));
+  }
+  function clearOverlays() {
+    ui.card.classList.remove("show");
+    ui.epic.classList.remove("show");
+    showInfo(false);
+    setMarker(C.texts.markerApproach || C.texts.marker, C.oulu);
+    spinning = false;
+  }
+
+  async function run(start = "epic") {
     const id = ++runId;
     const T = C.timing;
     camera.cancelFlight();
-    ui.card.classList.remove("show");
-    ui.aerialCap.classList.remove("show");
-    setMarker(C.texts.markerApproach || C.texts.marker, C.oulu);
-    showInfo(false);
-    camera.setView({ destination: spinStartPosition(), orientation: lookDown });
+    clearOverlays();
+    if (start === "epic") camera.setView({ destination: spinStartPosition(), orientation: lookDown });
+    let st = start;
 
     while (id === runId) {
-      // 0. Aito valokuva koko maapallosta (DSCOVR EPIC), joka vaihtuu 3D-palloksi
-      if (epic) {
-        sizeEpic();
-        setPhase(C.texts.phaseEpic);
-        ui.epic.classList.add("show");
-        if (!(await wait(T.epicHold, id))) return;
-        ui.epic.classList.remove("show");
-        setPhase(C.texts.phaseEarth);
-        if (!(await wait(T.epicFade, id))) return;
+      setStage(st);
+      if (st === "epic") {
+        // Aito valokuva koko maapallosta (DSCOVR EPIC), joka vaihtuu 3D-palloksi
+        if (epic) {
+          sizeEpic();
+          setPhase(C.texts.phaseEpic);
+          ui.epic.classList.add("show");
+          if (!(await wait(T.epicHold, id))) return;
+          ui.epic.classList.remove("show");
+          setPhase(C.texts.phaseEarth);
+          if (!(await wait(T.epicFade, id))) return;
+        } else {
+          setPhase(C.texts.phaseEarth);
+        }
+        st = "spin";
+      } else if (st === "spin") {
+        spinning = true;
+        if (!(await wait(spinPlan().seconds, id))) return;
+        spinning = false;
+        st = "finland";
+      } else if (st === "finland") {
+        setPhase(C.texts.phaseFinland);
+        const fin = viewOf(C.finland.lat, C.finland.lon, C.heights.finland, -62);
+        if (!(await fly(fin.destination, T.flyToFinland, fin.orientation, id))) return;
+        if (!(await wait(T.holdFinland, id))) return;
+        st = "oulu";
+      } else if (st === "oulu") {
+        // Oulu: pysähdys ja infolaatikko
+        setPhase(null);
+        const ov = viewOf(C.oulu.lat, C.oulu.lon, C.heights.oulu, -58);
+        if (!(await fly(ov.destination, T.flyToOulu, ov.orientation, id))) return;
+        showInfo(true, C.oulu, C.oulu);
+        if (!(await wait(T.holdOulu, id))) return;
+        showInfo(false);
+        st = "campus";
+      } else if (st === "campus") {
+        // Linnanmaan kampus
+        setPhase(null);
+        const h = aerial ? C.heights.target : C.heights.targetNoAerial;
+        const tv = viewOf(C.target.lat, C.target.lon, h, C.targetPitchDeg);
+        if (!(await fly(tv.destination, T.flyToTarget, tv.orientation, id))) return;
+        setMarker(C.texts.marker, C.target);
+        showInfo(true, C.target, C.campusInfo);
+        ui.card.classList.add("show");
+        if (!(await wait(T.holdTarget, id))) return;
+        ui.card.classList.remove("show");
+        showInfo(false);
+        setMarker(C.texts.markerApproach || C.texts.marker, C.oulu);
+        st = "out";
       } else {
-        setPhase(C.texts.phaseEarth);
+        // Takaisin avaruuteen ja alusta
+        setPhase(null);
+        if (!(await fly(spinStartPosition(), T.flyOut, lookDown, id))) return;
+        st = "epic";
       }
-
-      // 1. Vapaa pyöriminen
-      spinning = true;
-      if (!(await wait(spinPlan().seconds, id))) return;
-      spinning = false;
-
-      // 2. Suomi
-      setPhase(C.texts.phaseFinland);
-      const fin = viewOf(C.finland.lat, C.finland.lon, C.heights.finland, -62);
-      if (!(await fly(fin.destination, T.flyToFinland, fin.orientation, id))) return;
-      if (!(await wait(T.holdFinland, id))) return;
-
-      // 3. Oulu: pysähdys ja infolaatikko
-      setPhase(null);
-      const ov = viewOf(C.oulu.lat, C.oulu.lon, C.heights.oulu, -58);
-      if (!(await fly(ov.destination, T.flyToOulu, ov.orientation, id))) return;
-      showInfo(true, C.oulu, C.oulu);
-      if (!(await wait(T.holdOulu, id))) return;
-      showInfo(false);
-
-      // 4. Linnanmaan kampus
-      const h = aerial ? C.heights.target : C.heights.targetNoAerial;
-      const tv = viewOf(C.target.lat, C.target.lon, h, C.targetPitchDeg);
-      if (!(await fly(tv.destination, T.flyToTarget, tv.orientation, id))) return;
-      setMarker(C.texts.marker, C.target);
-      showInfo(true, C.target, C.campusInfo);
-      ui.card.classList.add("show");
-      if (aerial) ui.aerialCap.classList.add("show");
-      if (!(await wait(T.holdTarget, id))) return;
-      ui.card.classList.remove("show");
-      ui.aerialCap.classList.remove("show");
-      showInfo(false);
-      setMarker(C.texts.markerApproach || C.texts.marker, C.oulu);
-
-      // 5. Takaisin avaruuteen ja alusta
-      setPhase(null);
-      if (!(await fly(spinStartPosition(), T.flyOut, lookDown, id))) return;
     }
   }
 
@@ -472,6 +499,9 @@
     lite: () => { light = true; applyQuality(); updatePanel(); },
     pause: () => { paused = !paused; updatePanel(); },
     restart: () => { paused = false; run(); updatePanel(); },
+    goEarth: () => { paused = false; run("out"); updatePanel(); },
+    goOulu: () => { paused = false; run("oulu"); updatePanel(); },
+    goCampus: () => { paused = false; run("campus"); updatePanel(); },
     fullscreen: toggleFullscreen,
   };
   function updatePanel() {
@@ -489,9 +519,10 @@
     ui.panel.querySelector('[data-act="pause"]').textContent = paused ? "Resume" : "Pause";
   }
   ui.panel.addEventListener("click", (e) => {
-    const b = e.target.closest("button[data-act]");
+    const b = e.target.closest("button[data-act], button[data-go]");
     if (!b) return;
-    actions[b.dataset.act]();
+    if (b.dataset.go) actions["go" + b.dataset.go[0].toUpperCase() + b.dataset.go.slice(1)]();
+    else actions[b.dataset.act]();
     b.blur();
   });
 
@@ -531,7 +562,6 @@
   ui.card.querySelector(".sub").textContent = C.texts.subtitle;
   ui.card.querySelector(".partners").textContent = C.texts.partners || "";
   ui.card.querySelector(".funding").textContent = C.texts.funding || "";
-  ui.aerialCap.textContent = C.aerial.caption + (C.aerial.year ? ` · ${C.aerial.year}` : "");
 
   // ---------- DSCOVR EPIC: aito valokuva koko valaistusta maapallosta ----------
   let epic = null;
@@ -568,19 +598,29 @@
     if (mode !== "online") return LOCAL && LOCAL.epic ? LOCAL.epic : null;
     for (const api of C.epic.apis) {
       try {
-        const r = await fetch(api, { cache: "no-store" });
-        if (!r.ok) continue;
+        const ctl = new AbortController();
+        const timer = setTimeout(() => ctl.abort(), 10000);
+        const r = await fetch(api, { cache: "no-store", signal: ctl.signal });
+        clearTimeout(timer);
+        if (!r.ok) { console.warn("EPIC: list request failed", api, r.status); continue; }
         const list = await r.json();
-        if (!Array.isArray(list) || !list.length) continue;
+        if (!Array.isArray(list) || !list.length) { console.warn("EPIC: empty list", api); continue; }
         const it = pickEpic(list);
         const [d] = it.date.split(" ");
         const [y, m, dd] = d.split("-");
-        const src = C.epic.imageUrl
-          .replace("{y}", y).replace("{m}", m).replace("{d}", dd).replace("{image}", it.image);
-        const ok = await probe(src, 15000);
-        if (ok) return epicInfo(it, src);
-      } catch (e) { /* kokeillaan seuraavaa */ }
+        for (const tpl of C.epic.imageUrls) {
+          const src = tpl.replace("{y}", y).replace("{m}", m).replace("{d}", dd).replace("{image}", it.image);
+          if (await probe(src, 20000, false, false)) {
+            console.info("EPIC: using", it.date, "UTC", src);
+            return epicInfo(it, src);
+          }
+          console.warn("EPIC: image failed", src);
+        }
+      } catch (e) {
+        console.warn("EPIC: list request failed", api, e && e.message);
+      }
     }
+    console.warn("EPIC: no photo available, starting from the 3D globe");
     return null;
   }
   function sizeEpic() {

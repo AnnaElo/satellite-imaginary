@@ -30,14 +30,15 @@
 
   // ---------- Apufunktiot ----------
   // cors = true testaa samalla tavalla kuin 3D-moottori lataa kuvat (vaatii CORS-otsakkeet)
-  function probe(url, ms, cors) {
+  // bust = lisää välimuistin ohittavan parametrin (Maanmittauslaitos hylkää ylimääräiset parametrit)
+  function probe(url, ms, cors, bust = true) {
     return new Promise((resolve) => {
       const img = new Image();
       if (cors) img.crossOrigin = "anonymous";
       const t = setTimeout(() => resolve(false), ms);
       img.onload = () => { clearTimeout(t); resolve(true); };
       img.onerror = () => { clearTimeout(t); resolve(false); };
-      img.src = url + (url.includes("?") ? "&" : "?") + "probe=" + Date.now();
+      img.src = bust ? url + (url.includes("?") ? "&" : "?") + "probe=" + Date.now() : url;
     });
   }
   function wmLayer(url, minLevel, maxLevel, rectangle) {
@@ -217,8 +218,8 @@
         // Testataan Linnanmaan kohdalta, koska ilmakuva kattaa vain Suomen
         const [tz, tx, ty] = tileOf(C.target.lat, C.target.lon, 15);
         const testUrl = url.replace("{z}", tz).replace("{x}", tx).replace("{y}", ty);
-        const ok = await probe(testUrl, 8000, true);
-        if (!ok) console.warn("Aerial photo not available:", testUrl, "(no-CORS test:", await probe(testUrl, 8000, false), ")");
+        const ok = await probe(testUrl, 8000, true, false);
+        if (!ok) console.warn("Aerial photo not available:", testUrl, "(no-CORS test:", await probe(testUrl, 8000, false, false), ")");
         if (ok) {
           layers.addImageryProvider(
             wmLayer(url, a.minLevel, a.maxLevel, Cesium.Rectangle.fromDegrees(...a.bounds))

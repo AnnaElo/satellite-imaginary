@@ -33,7 +33,6 @@ window.GLOBE_CONFIG = {
       "European Capital of Culture 2026. A northern hub for wireless technology, 6G, drones, " +
       "health technology, audiovisual production, and virtual production—which also includes " +
       "research into extended and immersive reality.",
-    source: "Source: Wikipedia",
   },
 
   // Linnanmaan kampuksen infolaatikko (avautuu, kun kamera pysähtyy kampukselle).
@@ -49,7 +48,6 @@ window.GLOBE_CONFIG = {
     analysis:
       "Oamk's main campus, Oulu Campus Linnanmaa, is described as the largest campus in Europe " +
       "under one roof with the University of Oulu.",
-    source: "Sources: Oamk, UArctic",
   },
 
   // Kohde: Oulun yliopiston Linnanmaan kampus

@@ -135,17 +135,20 @@
 
   // ---------- Oulun infolaatikko ----------
   function daylightText(lat, date) {
-    // Valoisan ajan pituus (auringon keskipiste -0,833°), tarkkuus muutamia minuutteja
-    const start = Date.UTC(date.getUTCFullYear(), 0, 0);
-    const n = Math.floor((date - start) / 86400000);
+    // Valoisan ajan pituus (auringon keskipiste -0,833°, tarkka deklinaatio), tarkkuus noin minuutti
     const rad = Math.PI / 180;
-    const decl = -23.44 * Math.cos(((2 * Math.PI) / 365) * (n + 10));
-    const cosH = (Math.sin(-0.833 * rad) - Math.sin(lat * rad) * Math.sin(decl * rad)) /
-      (Math.cos(lat * rad) * Math.cos(decl * rad));
+    const d = date / 86400000 + 2440587.5 - 2451545.0;
+    const L = 280.46 + 0.9856474 * d, g = (357.528 + 0.9856003 * d) * rad;
+    const lam = (L + 1.915 * Math.sin(g) + 0.02 * Math.sin(2 * g)) * rad;
+    const eps = (23.439 - 0.0000004 * d) * rad;
+    const dec = Math.asin(Math.sin(eps) * Math.sin(lam));
+    const cosH = (Math.sin(-0.833 * rad) - Math.sin(lat * rad) * Math.sin(dec)) /
+      (Math.cos(lat * rad) * Math.cos(dec));
     if (cosH >= 1) return "Polar night (0 h)";
     if (cosH <= -1) return "Midnight sun (24 h)";
     const hours = (2 * Math.acos(cosH)) / rad / 15;
-    const h = Math.floor(hours), m = Math.round((hours - h) * 60);
+    let h = Math.floor(hours), m = Math.round((hours - h) * 60);
+    if (m === 60) { h += 1; m = 0; }
     return `${h} h ${String(m).padStart(2, "0")} min`;
   }
   function buildInfo(o) {
@@ -166,7 +169,6 @@
     const an = ui.info.querySelector(".hud-analysis");
     an.textContent = o.analysis;
     an.style.setProperty("--i", o.data.length + 1);
-    ui.info.querySelector(".hud-source").textContent = o.source || "";
   }
   let infoOpen = false;
   let infoAnchor = null;

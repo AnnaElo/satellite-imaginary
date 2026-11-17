@@ -154,7 +154,6 @@ body.idle, body.idle * { cursor: none !important; }
 .hud-row dt { color: rgba(255, 228, 205, 0.7); }
 .hud-row dd { margin: 0; font-variant-numeric: tabular-nums; }
 .hud-analysis { margin: 0 0 10px; font-size: clamp(13px, 0.95vw, 17px); line-height: 1.6; }
-.hud-source { font-size: 10px; letter-spacing: 0.08em; color: rgba(255, 228, 205, 0.5); }
 .hud-row, .hud-analysis { opacity: 0; transform: translateX(-8px); }
 .hud.show .hud-row, .hud.show .hud-analysis {
   opacity: 1; transform: none;

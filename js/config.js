@@ -55,7 +55,7 @@ window.GLOBE_CONFIG = {
   // Uusin ilmakuva (ortokuva) Linnanmaalta: Maanmittauslaitoksen avoin rajapinta, CC BY 4.0.
   // Vaatii maksuttoman API-avaimen. Ilman avainta lähikuvana näkyy Sentinel-2.
   aerial: {
-    apiKey: "",
+    apiKey: "09b14ab6-b655-4016-86df-d15c5c38483c",
     url: "https://avoin-karttakuva.maanmittauslaitos.fi/avoin/wmts/1.0.0/ortokuva/default/WGS84_Pseudo-Mercator/{z}/{y}/{x}.jpg?api-key={key}",
     minLevel: 11,
     maxLevel: 18,

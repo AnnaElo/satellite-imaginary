@@ -1,6 +1,6 @@
 # Maapallo – Oulu
 
-Pyörivä 3D-maapallo, joka lentää automaattisesti Suomeen ja Oulun yliopiston Linnanmaan kampukselle. Sivun tekstit ovat englanniksi. Tehty FINverse- ja Ouluversumi-hankkeiden esittelyyn.
+Pyörivä 3D-maapallo, jossa kamerakulma vaihtuu automaattisesti Suomeen, kohdentaen Oulun alueen ja erityisesti Linnanmaan kampuksen. Sivun tekstit ovat englanniksi. Tämä visualisointi on tehty ClaudeAI-työkalulla ja sen käyttökohde on AVARA2026-tapahtuma, jossa FINverse-hankkeen virtuaaliset sisällöt ovat esillä. 
 
 ## Verkkoversio
 

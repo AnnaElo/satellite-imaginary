@@ -25,9 +25,11 @@
   };
 
   // ---------- Apufunktiot ----------
-  function probe(url, ms) {
+  // cors = true testaa samalla tavalla kuin 3D-moottori lataa kuvat (vaatii CORS-otsakkeet)
+  function probe(url, ms, cors) {
     return new Promise((resolve) => {
       const img = new Image();
+      if (cors) img.crossOrigin = "anonymous";
       const t = setTimeout(() => resolve(false), ms);
       img.onload = () => { clearTimeout(t); resolve(true); };
       img.onerror = () => { clearTimeout(t); resolve(false); };
@@ -42,6 +44,12 @@
       maximumLevel: maxLevel,
       rectangle,
     });
+  }
+  function tileOf(lat, lon, z) {
+    const n = 2 ** z;
+    const r = (lat * Math.PI) / 180;
+    return [z, Math.floor(((lon + 180) / 360) * n),
+      Math.floor(((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n)];
   }
   const fmtCoord = (v, pos, neg) => `${Math.abs(v).toFixed(2)}° ${v >= 0 ? pos : neg}`;
 
@@ -132,7 +140,12 @@
       const a = C.aerial;
       if (a && a.apiKey) {
         const url = a.url.replace("{key}", encodeURIComponent(a.apiKey));
-        if (await probe(url.replace("{z}/{y}/{x}", "0/0/0"), 6000)) {
+        // Testataan Linnanmaan kohdalta, koska ilmakuva kattaa vain Suomen
+        const [tz, tx, ty] = tileOf(C.target.lat, C.target.lon, 15);
+        const testUrl = url.replace("{z}", tz).replace("{x}", tx).replace("{y}", ty);
+        const ok = await probe(testUrl, 8000, true);
+        if (!ok) console.warn("Aerial photo not available:", testUrl, "(no-CORS test:", await probe(testUrl, 8000, false), ")");
+        if (ok) {
           layers.addImageryProvider(
             wmLayer(url, a.minLevel, a.maxLevel, Cesium.Rectangle.fromDegrees(...a.bounds))
           );

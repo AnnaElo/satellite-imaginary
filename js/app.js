@@ -1,6 +1,7 @@
-/* Pyörivä maapallo, joka kohdistuu Suomeen ja Ouluun.
- * Toimii verkossa (NASA GIBS + Copernicus Sentinel-2 -tiilet) ja offline-tilassa
- * (paikalliset tiilet kansiossa tiles/, tai Cesiumin oma Natural Earth -pohjakartta). */
+/* Pyörivä maapallo, joka kohdistuu Suomeen ja Oulun yliopiston Linnanmaan kampukselle.
+ * Toimii verkossa (NASA GIBS, Copernicus Sentinel-2, Maanmittauslaitoksen ilmakuva, NASA EPIC)
+ * ja offline-tilassa (paikalliset tiedostot kansiossa tiles/, tai Cesiumin oma Natural Earth -kartta).
+ * Sivun tekstit ovat englanniksi; ne muokataan tiedostossa js/config.js. */
 (function () {
   "use strict";
 
@@ -19,18 +20,11 @@
     epic: $("epic"),
     epicImg: document.querySelector("#epic img"),
     epicCap: document.querySelector("#epic .epic-cap"),
+    aerialCap: $("aerial-cap"),
     fps: $("fps"),
   };
 
   // ---------- Apufunktiot ----------
-  function isoDateDaysAgo(days) {
-    const d = new Date(Date.now() - days * 86400000);
-    return d.toISOString().slice(0, 10);
-  }
-  function fiDate(iso) {
-    const [y, m, d] = iso.split("-");
-    return `${Number(d)}.${Number(m)}.${y}`;
-  }
   function probe(url, ms) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -49,6 +43,7 @@
       rectangle,
     });
   }
+  const fmtCoord = (v, pos, neg) => `${Math.abs(v).toFixed(2)}° ${v >= 0 ? pos : neg}`;
 
   // ---------- Näkymä ----------
   const viewer = new Cesium.Viewer("globe", {
@@ -66,15 +61,14 @@
     creditContainer: document.createElement("div"),
     requestRenderMode: false,
     msaaSamples: 1,
-    // Piirretään näytön todellisella tarkkuudella (Cesium piirtää oletuksena CSS-pikseleinä,
-    // mikä näyttää sumealta tarkoilla näytöillä).
+    // Piirretään näytön todellisella tarkkuudella (Cesium piirtää oletuksena CSS-pikseleinä).
     useBrowserRecommendedResolution: false,
     contextOptions: { webgl: { powerPreference: "high-performance", antialias: false } },
   });
   const scene = viewer.scene;
   const camera = viewer.camera;
-  // Tarkkuus: ?kevyt = kevyempi tila heikoille koneille. Muuten enintään 2x näytön tiheys.
-  let light = params.has("kevyt");
+  // Tarkkuus: ?light = kevyempi tila heikoille koneille. Muuten enintään 2x näytön tiheys.
+  let light = params.has("light") || params.has("kevyt");
   function applyQuality() {
     const dpr = window.devicePixelRatio || 1;
     viewer.resolutionScale = light ? 1 / dpr : Math.min(dpr, 2) / dpr;
@@ -93,11 +87,11 @@
   if (scene.moon) scene.moon.show = false;
   if (scene.sun) scene.sun.show = false;
 
-  // Oulun merkki näkyy vasta lähempänä
+  // Linnanmaan kampuksen merkki näkyy vasta lähempänä
   viewer.entities.add({
     position: Cesium.Cartesian3.fromDegrees(C.target.lon, C.target.lat),
     point: {
-      pixelSize: 10,
+      pixelSize: 12,
       color: Cesium.Color.fromCssColorString("#ffd166"),
       outlineColor: Cesium.Color.fromCssColorString("#0b1a2e"),
       outlineWidth: 2,
@@ -105,24 +99,21 @@
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
     },
     label: {
-      text: "Oulu",
-      font: "600 20px system-ui, 'Segoe UI', sans-serif",
+      text: C.texts.marker,
+      font: "600 22px system-ui, 'Segoe UI', sans-serif",
       fillColor: Cesium.Color.WHITE,
       outlineColor: Cesium.Color.fromCssColorString("#0b1a2e"),
       outlineWidth: 4,
       style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-      pixelOffset: new Cesium.Cartesian2(0, -22),
+      pixelOffset: new Cesium.Cartesian2(0, -24),
       distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 2500000),
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
     },
   });
 
   // ---------- Kuvatasot ----------
-  const dailyLayers = [];   // tuoreet satelliittikuvat, vanhin ensin
-  let dailyDates = [];      // ISO-päivämäärät, vanhin ensin
-  let dailyShown = false;
-  const hasDaily = () => dailyLayers.length > 0;
   let mode = "online";
+  let aerial = false; // onko Maanmittauslaitoksen ilmakuva käytössä
 
   async function setupImagery() {
     const im = C.imagery;
@@ -133,23 +124,25 @@
       mode = "online";
       layers.addImageryProvider(wmLayer(im.baseUrl, 0, im.baseMaxLevel));
       layers.addImageryProvider(wmLayer(im.detailUrl, im.detailMinLevel, im.detailMaxLevel));
-      dailyDates = im.dailyDaysBack.map(isoDateDaysAgo);
-      for (const date of dailyDates)
-        for (const sat of im.dailyLayers)
-          dailyLayers.push(layers.addImageryProvider(
-            wmLayer(im.dailyUrl.replace("{layer}", sat.id).replace("{time}", date), 0, im.dailyMaxLevel)
-          ));
+      const a = C.aerial;
+      if (a && a.apiKey) {
+        const url = a.url.replace("{key}", encodeURIComponent(a.apiKey));
+        if (await probe(url.replace("{z}/{y}/{x}", "0/0/0"), 6000)) {
+          layers.addImageryProvider(
+            wmLayer(url, a.minLevel, a.maxLevel, Cesium.Rectangle.fromDegrees(...a.bounds))
+          );
+          aerial = true;
+        }
+      }
     } else if (LOCAL) {
       mode = "offline";
       for (const l of LOCAL.layers) {
+        if (l.group === "daily") continue; // vanhat latauspaketit
         const rect = l.bounds ? Cesium.Rectangle.fromDegrees(...l.bounds) : undefined;
-        const layer = layers.addImageryProvider(
+        layers.addImageryProvider(
           wmLayer(`tiles/${l.name}/{z}/{x}/{y}.${l.ext || "jpg"}`, l.minLevel, l.maxLevel, rect)
         );
-        if (l.group === "daily") {
-          dailyLayers.push(layer);
-          if (l.date && !dailyDates.includes(l.date)) dailyDates.push(l.date);
-        }
+        if (l.name === "aerial") aerial = true;
       }
     } else {
       mode = "fallback";
@@ -159,38 +152,34 @@
       layers.addImageryProvider(provider);
     }
 
-    // NASA palauttaa kuvaamattomat alueet (napayö, ratojen välit) mustina.
-    // Muutetaan musta läpinäkyväksi, jolloin alempi kuva tai pilvetön pohjakuva näkyy niiden alta.
-    dailyDates.sort();
-    for (const l of dailyLayers) {
-      l.colorToAlpha = Cesium.Color.BLACK;
-      l.colorToAlphaThreshold = im.dailyBlackThreshold ?? 0.06;
-    }
-    showDaily(im.showDailyAtStart);
     updateFooter();
     updatePanel();
-    if (mode === "online") preloadOulu();
+    if (mode === "online") preloadTarget();
   }
 
-  // Ladataan Oulun ja lentoreitin tarkat tiilet valmiiksi selaimen välimuistiin,
+  // Ladataan kohteen tarkat tiilet valmiiksi selaimen välimuistiin,
   // jotta lähikuva on terävä heti laskeutumisen jälkeen.
-  function preloadOulu() {
-    const im = C.imagery;
+  function preloadTarget() {
     const t = C.target;
     const urls = [];
-    const box = { 9: 1.2, 10: 0.8, 11: 0.5, 12: 0.3, 13: 0.18, 14: 0.1 };
-    for (const [zs, d] of Object.entries(box)) {
-      const z = Number(zs);
-      if (z > im.detailMaxLevel) continue;
-      const n = 2 ** z;
-      const tx = (lon) => Math.floor(((lon + 180) / 360) * n);
-      const ty = (lat) => {
-        const r = (lat * Math.PI) / 180;
-        return Math.floor(((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n);
-      };
-      for (let x = tx(t.lon - d * 2); x <= tx(t.lon + d * 2); x++)
-        for (let y = ty(t.lat + d); y <= ty(t.lat - d); y++)
-          urls.push(im.detailUrl.replace("{z}", z).replace("{x}", x).replace("{y}", y));
+    const add = (template, levels) => {
+      for (const [zs, d] of Object.entries(levels)) {
+        const z = Number(zs);
+        const n = 2 ** z;
+        const tx = (lon) => Math.floor(((lon + 180) / 360) * n);
+        const ty = (lat) => {
+          const r = (lat * Math.PI) / 180;
+          return Math.floor(((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n);
+        };
+        for (let x = tx(t.lon - d * 2); x <= tx(t.lon + d * 2); x++)
+          for (let y = ty(t.lat + d); y <= ty(t.lat - d); y++)
+            urls.push(template.replace("{z}", z).replace("{x}", x).replace("{y}", y));
+      }
+    };
+    add(C.imagery.detailUrl, { 9: 1.2, 10: 0.8, 11: 0.5, 12: 0.3, 13: 0.18, 14: 0.1 });
+    if (aerial) {
+      const url = C.aerial.url.replace("{key}", encodeURIComponent(C.aerial.apiKey));
+      add(url, { 14: 0.05, 15: 0.03, 16: 0.02, 17: 0.012 });
     }
     let i = 0;
     const next = () => {
@@ -202,32 +191,19 @@
     for (let k = 0; k < 6; k++) next();
   }
 
-  function showDaily(on) {
-    dailyShown = !!on && hasDaily();
-    for (const l of dailyLayers) l.show = dailyShown;
-  }
-  function dailyRangeText() {
-    if (!dailyDates.length) return "";
-    const a = fiDate(dailyDates[0]), b = fiDate(dailyDates[dailyDates.length - 1]);
-    return a === b ? a : `${a.split(".").slice(0, 2).join(".")}.–${b}`;
-  }
-
   function updateFooter() {
     const parts = [];
     if (mode === "fallback") {
-      parts.push("Kartta: Natural Earth II (verkkoyhteys puuttuu)");
+      parts.push("Map: Natural Earth II (no internet connection)");
     } else {
-      parts.push("Satelliittikuvat: NASA GIBS Blue Marble");
-      parts.push("Sentinel-2 cloudless 2021, EOX IT Services GmbH (sis. muokattua Copernicus Sentinel -dataa 2021)");
-      if (epic) parts.unshift("Valokuva koko maapallosta: NASA DSCOVR / EPIC");
-      if (dailyShown && dailyDates.length) {
-        const sats = C.imagery.dailyLayers.map((d) => d.name).join(", ");
-        parts.unshift(`Tuore kuva ${dailyRangeText()}: NASA GIBS / VIIRS (${sats})`);
-      }
+      if (epic) parts.push("Earth photo: NASA DSCOVR / EPIC");
+      parts.push("Imagery: NASA GIBS Blue Marble");
+      parts.push("Sentinel-2 cloudless 2021 by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2021)");
+      if (aerial) parts.push("Aerial photo: National Land Survey of Finland, CC BY 4.0");
     }
     ui.source.textContent = parts.join(" · ");
     ui.mode.textContent =
-      mode === "online" ? "Verkko" : mode === "offline" ? "Offline" : "Offline (perustaso)";
+      mode === "online" ? "Online" : mode === "offline" ? "Offline" : "Offline (basic map)";
     ui.mode.dataset.mode = mode;
   }
 
@@ -274,7 +250,7 @@
     }, 350);
   }
 
-  // Pyörimisen aloituskohta ja kesto. Pyöriminen päättyy täsmälleen Oulun pituuspiirille.
+  // Pyörimisen aloituskohta ja kesto. Pyöriminen päättyy täsmälleen kohteen pituuspiirille.
   // Jos EPIC-kuva on käytössä, aloitetaan samasta kohdasta kuin kuvassa näkyvä maapallo.
   function spinPlan() {
     if (epic) {
@@ -296,18 +272,19 @@
   }
   const lookDown = { heading: 0, pitch: -Cesium.Math.PI_OVER_TWO, roll: 0 };
 
-  scene.preRender.addEventListener((_scene, time) => {
+  // Kameran paikka, josta katsotaan vinosti kohteeseen (kohde keskellä kuvaa)
+  function viewOf(lat, lon, height, pitchDeg) {
+    const back = height / Math.tan(Cesium.Math.toRadians(Math.abs(pitchDeg))); // metriä etelään
+    return {
+      destination: Cesium.Cartesian3.fromDegrees(lon, lat - back / 111320, height),
+      orientation: { heading: 0, pitch: Cesium.Math.toRadians(pitchDeg), roll: 0 },
+    };
+  }
+
+  scene.preRender.addEventListener(() => {
     const now = performance.now();
     const dt = (now - (scene._lastSpin || now)) / 1000;
     scene._lastSpin = now;
-    // Tuore kuva häivytetään lähelle zoomatessa (sen tarkkuus on n. 250 m), jolloin
-    // Oulun tarkka Sentinel-2-kuva näkyy.
-    if (dailyShown) {
-      const im = C.imagery;
-      const h = camera.positionCartographic.height;
-      const a = Cesium.Math.clamp((h - im.dailyFadeTo) / (im.dailyFadeFrom - im.dailyFadeTo), 0, 1);
-      for (const l of dailyLayers) l.alpha = a;
-    }
     if (spinning && !paused && dt < 0.5) {
       // Kamera kiertää länteen, jolloin maapallo näyttää pyörivän oikeaan suuntaan.
       camera.rotate(Cesium.Cartesian3.UNIT_Z, -Cesium.Math.toRadians(C.spinDegPerSec * dt));
@@ -319,6 +296,7 @@
     const T = C.timing;
     camera.cancelFlight();
     ui.card.classList.remove("show");
+    ui.aerialCap.classList.remove("show");
     camera.setView({ destination: spinStartPosition(), orientation: lookDown });
 
     while (id === runId) {
@@ -342,25 +320,20 @@
 
       // 2. Suomi
       setPhase(C.texts.phaseFinland);
-      if (!(await fly(
-        Cesium.Cartesian3.fromDegrees(C.finland.lon, C.finland.lat - 6, C.heights.finland),
-        T.flyToFinland,
-        { heading: 0, pitch: Cesium.Math.toRadians(-62), roll: 0 },
-        id
-      ))) return;
+      const fin = viewOf(C.finland.lat, C.finland.lon, C.heights.finland, -62);
+      if (!(await fly(fin.destination, T.flyToFinland, fin.orientation, id))) return;
       if (!(await wait(T.holdFinland, id))) return;
 
-      // 3. Oulu
+      // 3. Linnanmaan kampus
       setPhase(null);
-      if (!(await fly(
-        Cesium.Cartesian3.fromDegrees(C.target.lon, C.target.lat - 0.16, C.heights.oulu),
-        T.flyToOulu,
-        { heading: 0, pitch: Cesium.Math.toRadians(-52), roll: 0 },
-        id
-      ))) return;
+      const h = aerial ? C.heights.target : C.heights.targetNoAerial;
+      const tv = viewOf(C.target.lat, C.target.lon, h, C.targetPitchDeg);
+      if (!(await fly(tv.destination, T.flyToTarget, tv.orientation, id))) return;
       ui.card.classList.add("show");
-      if (!(await wait(T.holdOulu, id))) return;
+      if (aerial) ui.aerialCap.classList.add("show");
+      if (!(await wait(T.holdTarget, id))) return;
       ui.card.classList.remove("show");
+      ui.aerialCap.classList.remove("show");
 
       // 4. Takaisin avaruuteen ja alusta
       setPhase(null);
@@ -369,12 +342,6 @@
   }
 
   // ---------- Valikko ja näppäimet ----------
-  function setDaily(on) {
-    if (!hasDaily()) return;
-    showDaily(on);
-    updateFooter();
-    updatePanel();
-  }
   function setOffline(on) {
     const u = new URL(location.href);
     if (on) u.searchParams.set("offline", ""); else u.searchParams.delete("offline");
@@ -387,8 +354,6 @@
   const actions = {
     online: () => setOffline(false),
     offline: () => setOffline(true),
-    clear: () => setDaily(false),
-    daily: () => setDaily(true),
     hq: () => { light = false; applyQuality(); updatePanel(); },
     lite: () => { light = true; applyQuality(); updatePanel(); },
     pause: () => { paused = !paused; updatePanel(); },
@@ -399,8 +364,6 @@
     const on = {
       online: mode === "online",
       offline: mode !== "online",
-      clear: !dailyShown,
-      daily: dailyShown,
       hq: !light,
       lite: light,
       pause: paused,
@@ -408,12 +371,8 @@
     ui.panel.querySelectorAll("button[data-act]").forEach((b) => {
       const a = b.dataset.act;
       if (a in on) b.setAttribute("aria-pressed", String(on[a]));
-      if (a === "daily") {
-        b.disabled = !hasDaily();
-        b.title = hasDaily() ? `NASA VIIRS ${dailyRangeText()}` : "Ei saatavilla tässä tilassa";
-      }
     });
-    ui.panel.querySelector('[data-act="pause"]').textContent = paused ? "Jatka" : "Tauko";
+    ui.panel.querySelector('[data-act="pause"]').textContent = paused ? "Resume" : "Pause";
   }
   ui.panel.addEventListener("click", (e) => {
     const b = e.target.closest("button[data-act]");
@@ -426,7 +385,6 @@
     const k = e.key.toLowerCase();
     if (k === " ") { actions.pause(); e.preventDefault(); }
     else if (k === "r") actions.restart();
-    else if (k === "d" && hasDaily()) setDaily(!dailyShown);
     else if (k === "f") toggleFullscreen();
     else if (k === "h") ui.panel.classList.toggle("hidden");
   });
@@ -451,18 +409,21 @@
   })(fpsT);
 
   // Testejä varten
-  window.__globe = { viewer, run, get mode() { return mode; } };
+  window.__globe = { viewer, run, get mode() { return mode; }, get aerial() { return aerial; } };
 
+  ui.card.querySelector(".eyebrow").textContent =
+    `${fmtCoord(C.target.lat, "N", "S")} · ${fmtCoord(C.target.lon, "E", "W")}`;
   ui.card.querySelector(".title").textContent = C.texts.title;
   ui.card.querySelector(".sub").textContent = C.texts.subtitle;
+  ui.aerialCap.textContent = C.aerial.caption + (C.aerial.year ? ` · ${C.aerial.year}` : "");
 
   // ---------- DSCOVR EPIC: aito valokuva koko valaistusta maapallosta ----------
   let epic = null;
   const EPIC_FOV_DEG = 0.61; // EPIC-kameran näkökenttä, kuva 2048 x 2048 px
 
   function pickEpic(list) {
-    // Valitaan kuva, jonka keskipituuspiiri on sopivan matkan Oulusta itään, jotta pyöriminen
-    // kestää noin tavoiteajan ja päättyy Oulun kohdalle.
+    // Valitaan kuva, jonka keskipituuspiiri on sopivan matkan kohteesta itään, jotta pyöriminen
+    // kestää noin tavoiteajan ja päättyy kohteen kohdalle.
     const want = C.spinDegPerSec * C.timing.spin;
     let best = null, bestScore = Infinity;
     for (const it of list) {
@@ -520,12 +481,13 @@
   function showEpicCaption() {
     if (!epic) return;
     const t = new Date(epic.date.replace(" ", "T") + "Z");
-    const when = t.toLocaleString("fi-FI", {
-      day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit",
+    const when = t.toLocaleString("en-GB", {
+      day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
       timeZone: "Europe/Helsinki",
     });
-    const mkm = (epic.distKm / 1e6).toLocaleString("fi-FI", { maximumFractionDigits: 1 });
-    ui.epicCap.textContent = `Valokuva ${when} · ${mkm} milj. km:n etäisyydeltä · NASA DSCOVR / EPIC`;
+    const mkm = (epic.distKm / 1e6).toLocaleString("en-GB", { maximumFractionDigits: 1 });
+    ui.epicCap.textContent =
+      `Photographed ${when} (Finnish time) · ${mkm} million km away · NASA DSCOVR / EPIC`;
   }
 
   setupImagery()

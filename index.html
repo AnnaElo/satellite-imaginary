@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="fi">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Maapallo – Oulu</title>
+  <title>FINverse · Ouluversumi</title>
   <script>window.CESIUM_BASE_URL = "vendor/cesium/";</script>
   <link rel="stylesheet" href="vendor/cesium/Widgets/widgets.css">
   <link rel="stylesheet" href="css/style.css">
@@ -19,49 +19,44 @@
   <div id="phase" class="phase" aria-live="polite"></div>
 
   <div id="card" class="card">
-    <div class="eyebrow">65,01° N · 25,47° E</div>
+    <div class="eyebrow"></div>
     <div class="title"></div>
     <div class="sub"></div>
   </div>
+
+  <div id="aerial-cap" class="aerial-cap"></div>
 
   <footer class="footer">
     <span id="mode" class="mode"></span>
     <span id="source" class="source"></span>
   </footer>
 
-  <nav id="panel" class="panel" aria-label="Katselutavat">
+  <nav id="panel" class="panel" aria-label="Viewing options">
     <div class="row">
-      <span class="lbl">Lähde</span>
+      <span class="lbl">Source</span>
       <div class="seg">
-        <button type="button" data-act="online" title="Kuvat haetaan suoraan NASAn ja Copernicuksen palveluista">Verkko</button>
-        <button type="button" data-act="offline" title="Vain paikalliset tiedostot (kansio tiles/)">Offline</button>
+        <button type="button" data-act="online" title="Imagery loaded live from NASA, Copernicus and the National Land Survey of Finland">Online</button>
+        <button type="button" data-act="offline" title="Local files only (tiles folder)">Offline</button>
       </div>
     </div>
     <div class="row">
-      <span class="lbl">Kuva</span>
+      <span class="lbl">Quality</span>
       <div class="seg">
-        <button type="button" data-act="clear" title="Pilvetön kuvakooste">Pilvetön</button>
-        <button type="button" data-act="daily" title="Satelliittikuvat kahdelta viime päivältä">Tuore</button>
+        <button type="button" data-act="hq" title="Full screen resolution">Sharp</button>
+        <button type="button" data-act="lite" title="Lighter, for slower computers">Light</button>
       </div>
     </div>
     <div class="row">
-      <span class="lbl">Laatu</span>
+      <span class="lbl">Show</span>
       <div class="seg">
-        <button type="button" data-act="hq" title="Näytön täysi tarkkuus">Tarkka</button>
-        <button type="button" data-act="lite" title="Kevyempi heikoille koneille">Kevyt</button>
-      </div>
-    </div>
-    <div class="row">
-      <span class="lbl">Esitys</span>
-      <div class="seg">
-        <button type="button" data-act="pause">Tauko</button>
-        <button type="button" data-act="restart">Alusta</button>
-        <button type="button" data-act="fullscreen">Koko näyttö</button>
+        <button type="button" data-act="pause">Pause</button>
+        <button type="button" data-act="restart">Restart</button>
+        <button type="button" data-act="fullscreen">Fullscreen</button>
       </div>
     </div>
     <div class="row meta">
       <span id="fps" class="fps">– FPS</span>
-      <span class="keys">H piilottaa valikon</span>
+      <span class="keys">H hides this menu</span>
     </div>
   </nav>
 

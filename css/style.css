@@ -25,6 +25,13 @@ body.idle, body.idle * { cursor: none !important; }
   font-variant-numeric: tabular-nums;
 }
 
+.aerial-cap {
+  position: absolute; right: 5vw; bottom: 12vh; padding: 6px 12px;
+  font-size: clamp(12px, 1vw, 18px); color: var(--ink); background: var(--panel);
+  letter-spacing: 0.04em; opacity: 0; transition: opacity 1s ease; pointer-events: none;
+}
+.aerial-cap.show { opacity: 1; }
+
 .phase {
   position: absolute; top: 6vh; left: 0; right: 0; text-align: center;
   font-size: clamp(20px, 2.4vw, 40px); font-weight: 300; letter-spacing: 0.18em;
@@ -64,7 +71,7 @@ body.idle, body.idle * { cursor: none !important; }
   transition: opacity 0.4s ease;
 }
 .panel.hidden { opacity: 0; pointer-events: none; }
-.panel .row { display: grid; grid-template-columns: 52px auto; align-items: center; gap: 8px; }
+.panel .row { display: grid; grid-template-columns: 58px auto; align-items: center; gap: 8px; }
 .panel .lbl { text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; }
 .panel .seg { display: flex; gap: 2px; }
 .panel button {
@@ -79,5 +86,5 @@ body.idle, body.idle * { cursor: none !important; }
 .panel .fps { font-variant-numeric: tabular-nums; color: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) {
-  .phase, .card, .panel, .epic { transition: none; }
+  .phase, .card, .panel, .epic, .aerial-cap { transition: none; }
 }

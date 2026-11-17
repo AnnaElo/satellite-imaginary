@@ -3,15 +3,15 @@ window.GLOBE_CONFIG = {
   // Tekstit, jotka näytetään esityksen aikana
   texts: {
     title: "FINverse · Ouluversumi",
-    subtitle: "Oulu, Suomi",
-    phaseEpic: "Maapallo tänään",
-    phaseEarth: "Maapallo avaruudesta",
-    phaseFinland: "Suomi",
-    phaseOulu: "Oulu",
+    subtitle: "Linnanmaa campus, University of Oulu",
+    marker: "Linnanmaa campus",
+    phaseEpic: "Earth today",
+    phaseEarth: "Earth from space",
+    phaseFinland: "Finland",
   },
 
-  // Kohde (Oulun keskusta)
-  target: { lat: 65.0121, lon: 25.4651 },
+  // Kohde: Oulun yliopiston Linnanmaan kampus
+  target: { lat: 65.0592, lon: 25.4664 },
   finland: { lat: 64.6, lon: 26.0 },
 
   // Ajoitukset sekunteina
@@ -21,8 +21,8 @@ window.GLOBE_CONFIG = {
     spin: 20,          // vapaa pyöriminen ennen lentoa (tavoite; EPIC-kuvan kanssa 10–30 s)
     flyToFinland: 8,   // lento Suomen yläpuolelle
     holdFinland: 4,    // tauko Suomen kohdalla
-    flyToOulu: 7,      // lento Ouluun
-    holdOulu: 18,      // tauko Oulussa (hankkeiden nimet näkyvissä)
+    flyToTarget: 8,    // lento Linnanmaalle
+    holdTarget: 18,    // tauko Linnanmaalla (hankkeiden nimet näkyvissä)
     flyOut: 8,         // paluu avaruuteen, sitten silmukka alkaa alusta
   },
 
@@ -35,8 +35,10 @@ window.GLOBE_CONFIG = {
   // Kameran korkeudet metreinä
   heights: {
     finland: 1800000,
-    oulu: 18000,
+    target: 2600,          // kun Maanmittauslaitoksen ilmakuva on käytössä
+    targetNoAerial: 9000,  // ilman ilmakuvaa (Sentinel-2 ei ole tarkka lähietäisyydeltä)
   },
+  targetPitchDeg: -50,
 
   // Aito valokuva koko maapallosta: NASA DSCOVR -satelliitin EPIC-kamera noin 1,5 milj. km:n päästä.
   // Kuvat julkaistaan yleensä 12–36 tunnin viiveellä.
@@ -47,6 +49,18 @@ window.GLOBE_CONFIG = {
       "https://api.nasa.gov/EPIC/api/natural?api_key=DEMO_KEY",
     ],
     imageUrl: "https://epic.gsfc.nasa.gov/archive/natural/{y}/{m}/{d}/png/{image}.png",
+  },
+
+  // Uusin ilmakuva (ortokuva) Linnanmaalta: Maanmittauslaitoksen avoin rajapinta, CC BY 4.0.
+  // Vaatii maksuttoman API-avaimen. Ilman avainta lähikuvana näkyy Sentinel-2.
+  aerial: {
+    apiKey: "",
+    url: "https://avoin-karttakuva.maanmittauslaitos.fi/avoin/wmts/1.0.0/ortokuva/default/WGS84_Pseudo-Mercator/{z}/{y}/{x}.jpg?api-key={key}",
+    minLevel: 11,
+    maxLevel: 18,
+    bounds: [25.2, 64.95, 25.75, 65.15], // länsi, etelä, itä, pohjoinen
+    caption: "Aerial photo · National Land Survey of Finland",
+    year: "", // kuvausvuosi, jos tiedossa (esim. "2024")
   },
 
   // Satelliittikuvat (avoin data)
@@ -61,24 +75,5 @@ window.GLOBE_CONFIG = {
       "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2021_3857/default/g/{z}/{y}/{x}.jpg",
     detailMinLevel: 3,
     detailMaxLevel: 15,
-
-    // Tuoreet satelliittikuvat (NASA GIBS, VIIRS). Kolmen satelliitin kuvat kahdelta viime päivältä
-    // yhdistetään: tuorein päällimmäisenä, vanhempi täyttää aukot. {layer} ja {time} täytetään alla olevista.
-    // PNG + musta läpinäkyväksi, jolloin kuvaamattomat kohdat (esim. napayö) näyttävät pilvettömän pohjakuvan.
-    dailyUrl:
-      "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/{layer}/default/{time}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
-    dailyLayers: [
-      { id: "VIIRS_SNPP_CorrectedReflectance_TrueColor", name: "Suomi NPP" },
-      { id: "VIIRS_NOAA20_CorrectedReflectance_TrueColor", name: "NOAA-20" },
-      { id: "VIIRS_NOAA21_CorrectedReflectance_TrueColor", name: "NOAA-21" },
-    ],
-    dailyDaysBack: [2, 1],  // vanhin ensin; viimeisin jää päällimmäiseksi
-    dailyMaxLevel: 9,
-    // Tuore kuva häivytetään lähelle zoomatessa, jotta Oulun tarkka Sentinel-2-kuva näkyy (metreinä)
-    dailyFadeFrom: 1000000,
-    dailyFadeTo: 250000,
-    // Kuinka tummat pikselit tulkitaan kuvaamattomiksi (0–1). Nosta, jos reunoille jää tummaa.
-    dailyBlackThreshold: 0.06,
-    showDailyAtStart: false,
   },
 };

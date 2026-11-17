@@ -2,12 +2,12 @@
 """Lataa satelliittikuvatiilet offline-käyttöön kansioon tiles/.
 
 Aja koneella, jossa on verkkoyhteys, mieluiten päivää ennen tapahtumaa:
-    python tools/lataa_tiilet.py            (pohjakuva + Suomi + Oulu)
-    python tools/lataa_tiilet.py --daily    (lisäksi kahden viime päivän VIIRS-kuvat)
+    python tools/lataa_tiilet.py                      (pohjakuva + Suomi + Oulu + EPIC-valokuva)
+    python tools/lataa_tiilet.py --nls-key AVAIN      (lisäksi Linnanmaan ilmakuva)
 
 Kirjoittaa tiles/manifest.js, jonka avulla esitys löytää tiilet ilman verkkoa.
 """
-import argparse, datetime, json, math, os, sys, time, urllib.request
+import argparse, datetime, json, math, os, sys, time, urllib.parse, urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -20,27 +20,21 @@ FINLAND = (19.0, 59.5, 32.0, 70.2)   # länsi, etelä, itä, pohjoinen
 OULU = (24.7, 64.75, 26.2, 65.25)
 
 
-DAILY_SATS = ["VIIRS_SNPP_CorrectedReflectance_TrueColor",
-              "VIIRS_NOAA20_CorrectedReflectance_TrueColor",
-              "VIIRS_NOAA21_CorrectedReflectance_TrueColor"]
+NLS = "https://avoin-karttakuva.maanmittauslaitos.fi/avoin/wmts/1.0.0/ortokuva/default/WGS84_Pseudo-Mercator"
+LINNANMAA = (25.40, 65.03, 25.53, 65.085)
 
 
-def layers(daily_dates):
+def layers(nls_key):
     out = [
         dict(name="base", url=GIBS + "/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg",
              levels=range(0, 6), bounds=None),
-    ]
-    # Tuoreet kuvat: vanhin päivä ensin, jotta uusin jää päällimmäiseksi
-    for date in daily_dates:
-        for sat in DAILY_SATS:
-            short = sat.split("_")[1].lower()
-            out.append(dict(name=f"daily-{date}-{short}", group="daily", date=date,
-                            url=GIBS + f"/{sat}/default/{date}/GoogleMapsCompatible_Level9/{{z}}/{{y}}/{{x}}.png",
-                            levels=range(0, 5), bounds=None, ext="png"))
-    out += [
         dict(name="finland", url=EOX + "/{z}/{y}/{x}.jpg", levels=range(5, 11), bounds=FINLAND),
         dict(name="oulu", url=EOX + "/{z}/{y}/{x}.jpg", levels=range(11, 14), bounds=OULU),
     ]
+    if nls_key:
+        # Maanmittauslaitoksen uusin ortokuva (ilmakuva) Linnanmaalta
+        out.append(dict(name="aerial", url=NLS + "/{z}/{y}/{x}.jpg?api-key=" + urllib.parse.quote(nls_key),
+                        levels=range(12, 18), bounds=LINNANMAA))
     return out
 
 
@@ -81,7 +75,7 @@ EPIC_APIS = [
     "https://api.nasa.gov/EPIC/api/natural?api_key=DEMO_KEY",
 ]
 EPIC_IMG = os.environ.get("MAAPALLO_EPIC_IMG", "https://epic.gsfc.nasa.gov/archive/natural/{y}/{m}/{d}/png/{image}.png")
-OULU_LON, SPIN_DEG = 25.4651, 6 * 20   # sama valinta kuin js/app.js:ssä
+OULU_LON, SPIN_DEG = 25.4664, 6 * 20   # sama valinta kuin js/app.js:ssä
 
 
 def download_epic():
@@ -115,16 +109,15 @@ def download_epic():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--daily", action="store_true", help="lataa myös kahden viime päivän VIIRS-kuvat")
+    ap.add_argument("--nls-key", default=os.environ.get("NLS_API_KEY", ""),
+                    help="Maanmittauslaitoksen API-avain: lataa myös Linnanmaan ilmakuvan")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--dry-run", action="store_true", help="näytä vain tiilten määrä")
     a = ap.parse_args()
 
-    now = datetime.datetime.now(datetime.timezone.utc)
-    daily_dates = [(now - datetime.timedelta(days=d)).strftime("%Y-%m-%d") for d in (2, 1)] if a.daily else []
     manifest = []
     jobs = []
-    for L in layers(daily_dates):
+    for L in layers(a.nls_key):
         count = 0
         for z in L["levels"]:
             xs, ys = tile_range(z, L["bounds"])

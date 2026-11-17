@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maapallo – Oulu</title>
+  <script>window.CESIUM_BASE_URL = "vendor/cesium/";</script>
+  <link rel="stylesheet" href="vendor/cesium/Widgets/widgets.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="globe"></div>
+
+  <div id="phase" class="phase" aria-live="polite"></div>
+
+  <div id="card" class="card">
+    <div class="eyebrow">65,01° N · 25,47° E</div>
+    <div class="title"></div>
+    <div class="sub"></div>
+  </div>
+
+  <footer class="footer">
+    <span id="mode" class="mode"></span>
+    <span id="source" class="source"></span>
+  </footer>
+
+  <div id="hint" class="hint show">
+    Välilyönti = tauko · R = alusta · D = päivän satelliittikuva · F = koko näyttö · H = ohje
+  </div>
+
+  <script src="vendor/cesium/Cesium.js"></script>
+  <script src="js/config.js"></script>
+  <script src="tiles/manifest.js" onerror="void 0"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

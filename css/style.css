@@ -71,6 +71,12 @@ body.idle, body.idle * { cursor: none !important; }
 }
 .card.show .title::after { transform: scaleX(1); }
 .card .sub { font-size: clamp(16px, 1.5vw, 28px); color: rgba(255, 228, 205, 0.85); margin-top: 0.6em; line-height: 1.6; }
+.card-section {
+  font-size: clamp(11px, 0.8vw, 14px); letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--holo); margin-top: 1.2em;
+}
+.card-text { margin: 0.3em 0 0; font-size: clamp(13px, 1vw, 18px); line-height: 1.6; }
+.card-text.funding { margin-top: 0.9em; color: rgba(255, 228, 205, 0.7); }
 
 .footer {
   position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 12px; align-items: center;

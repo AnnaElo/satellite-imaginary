@@ -4,6 +4,10 @@ window.GLOBE_CONFIG = {
   texts: {
     title: "FINverse Project",
     subtitle: "Status: Ongoing until November 30, 2026.",
+    partners:
+      "City of Oulu / BusinessOulu, City of Espoo, Oulu University of Applied Sciences (Oamk), " +
+      "and University of Oulu.",
+    funding: "Funded by the Council of Tampere Region, with partial funding from the European Union.",
     markerApproach: "Oulu",          // merkin teksti lennon aikana
     marker: "Linnanmaa campus",      // teksti, kun kamera on pysähtynyt kampukselle
     phaseEpic: "Earth today",

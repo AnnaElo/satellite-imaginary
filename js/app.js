@@ -529,6 +529,8 @@
     `${fmtCoord(C.target.lat, "N", "S")} · ${fmtCoord(C.target.lon, "E", "W")}`;
   ui.card.querySelector(".title").textContent = C.texts.title;
   ui.card.querySelector(".sub").textContent = C.texts.subtitle;
+  ui.card.querySelector(".partners").textContent = C.texts.partners || "";
+  ui.card.querySelector(".funding").textContent = C.texts.funding || "";
   ui.aerialCap.textContent = C.aerial.caption + (C.aerial.year ? ` · ${C.aerial.year}` : "");
 
   // ---------- DSCOVR EPIC: aito valokuva koko valaistusta maapallosta ----------

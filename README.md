@@ -65,44 +65,39 @@ Kestot ja kameran korkeudet ovat `js/config.js`:n kohdissa `timing` ja `heights`
 Sovellus on staattinen verkkosivu ilman palvelinpuolen koodia tai build-vaihetta. Selain lataa skriptit järjestyksessä `vendor/cesium/Cesium.js` → `js/config.js` → `tiles/manifest.js` → `js/app.js`.
 
 ```mermaid
-flowchart LR
-    subgraph Selain["Selain (index.html)"]
+flowchart TB
+    subgraph Online["Avoimet kuvapalvelut, online-tila"]
+        direction LR
+        EPIC["NASA DSCOVR / EPIC<br/>päivän valokuva maapallosta"]
+        GIBS["NASA GIBS<br/>Blue Marble -pohjakuva"]
+        EOX["EOX Sentinel-2 cloudless<br/>Suomi ja Oulu"]
+        NLS["Maanmittauslaitos<br/>Linnanmaan ortokuva"]
+    end
+
+    subgraph Selain["Selain: index.html"]
+        direction LR
         CFG["js/config.js<br/>tekstit, ajoitukset,<br/>korkeudet, kuvalähteet"]
-        MAN["tiles/manifest.js<br/>paikallisten tiilien luettelo<br/>(offline)"]
         APP["js/app.js<br/>esityksen tilakone,<br/>kuvatasot, valikko"]
         CES["CesiumJS 1.120<br/>3D-maapallo (WebGL)"]
-        UI["Käyttöliittymä<br/>EPIC-kuva, infolaatikot,<br/>FINverse-kortti, valikko<br/>(css/style.css)"]
+        UI["Käyttöliittymä<br/>EPIC-kuva, infolaatikot,<br/>FINverse-kortti, valikko"]
         CFG --> APP
-        MAN --> APP
         APP --> CES
         APP --> UI
     end
 
-    subgraph Online["Avoimet kuvapalvelut (online-tila)"]
-        EPIC["NASA DSCOVR / EPIC<br/>päivän valokuva maapallosta"]
-        GIBS["NASA GIBS<br/>Blue Marble -pohjakuva"]
-        EOX["EOX Sentinel-2 cloudless<br/>Suomi ja Oulu"]
-        NLS["Maanmittauslaitos<br/>Linnanmaan ortokuva<br/>(API-avain)"]
-    end
-
     subgraph Offline["Offline-paketti tapahtumaan"]
-        DL["tools/lataa_tiilet.py<br/>(ajetaan verkossa etukäteen)"]
-        TILES[("tiles/<br/>kuvatiilet + EPIC-kuva")]
-        SRV["Käynnistä (Windows).bat → tools/palvelin.ps1<br/>Käynnistä (Mac).command → Python http.server"]
+        direction LR
+        DL["tools/lataa_tiilet.py<br/>ajetaan verkossa etukäteen"]
+        TILES[("tiles/<br/>kuvatiilet, EPIC-kuva<br/>ja manifest.js")]
+        SRV["Käynnistä-tiedosto<br/>paikallinen palvelin"]
         DL --> TILES
-        DL --> MAN
-        SRV -. paikallinen palvelin .-> Selain
     end
 
-    EPIC --> APP
-    GIBS --> CES
-    EOX --> CES
-    NLS --> CES
-    EPIC -.-> DL
-    GIBS -.-> DL
-    EOX -.-> DL
-    NLS -.-> DL
-    TILES --> CES
+    EPIC -- EPIC-kuva --> APP
+    GIBS & EOX & NLS -- kuvatiilet --> CES
+    Online -. ladataan etukäteen .-> DL
+    TILES -- offline-tilassa --> APP
+    SRV -. avaa sivun selaimeen .-> APP
 ```
 
 **Kuvatasot päällekkäin (alimmasta ylimpään):**

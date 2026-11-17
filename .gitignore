@@ -2,3 +2,4 @@ node_modules/
 .DS_Store
 tiles/*
 !tiles/LUE_MINUT.txt
+!tiles/manifest.js

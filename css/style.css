@@ -1,4 +1,8 @@
 :root {
+  --holo: #ff8a3d;
+  --holo-soft: rgba(255, 138, 61, 0.55);
+  --holo-bg: rgba(70, 24, 6, 0.42);
+  --holo-ink: #fff4ea;
   --ink: #f3f6fb;
   --muted: rgba(243, 246, 251, 0.72);
   --accent: #ffd166;
@@ -26,7 +30,7 @@ body.idle, body.idle * { cursor: none !important; }
 }
 
 .aerial-cap {
-  position: absolute; right: 5vw; bottom: 12vh; padding: 6px 12px;
+  position: absolute; right: 16px; bottom: 40px; padding: 6px 12px;
   font-size: clamp(12px, 1vw, 18px); color: var(--ink); background: var(--panel);
   letter-spacing: 0.04em; opacity: 0; transition: opacity 1s ease; pointer-events: none;
 }
@@ -42,7 +46,7 @@ body.idle, body.idle * { cursor: none !important; }
 .phase.show { opacity: 1; transform: none; }
 
 .card {
-  position: absolute; left: 5vw; bottom: 12vh; max-width: 40vw;
+  position: absolute; left: 5vw; bottom: 10vh; max-width: 32vw;
   padding: 2.2vh 2.4vw; background: var(--panel); border-left: 3px solid var(--accent);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   opacity: 0; transform: translateX(-20px); transition: opacity 1s ease, transform 1s ease;
@@ -85,6 +89,77 @@ body.idle, body.idle * { cursor: none !important; }
 .panel .meta { grid-template-columns: auto auto; justify-content: space-between; font-size: 11px; }
 .panel .fps { font-variant-numeric: tabular-nums; color: var(--ink); }
 
+/* ---------- Oulun infolaatikko (holografinen skannauspaneeli) ---------- */
+.hud {
+  position: absolute; left: 0; top: 0; width: clamp(300px, 23vw, 440px);
+  padding: 20px 24px 16px; color: var(--holo-ink);
+  background:
+    repeating-linear-gradient(to bottom, rgba(255, 138, 61, 0.07) 0 1px, transparent 1px 4px),
+    linear-gradient(135deg, rgba(110, 38, 8, 0.55), var(--holo-bg));
+  border: 1px solid var(--holo-soft);
+  box-shadow: 0 0 24px rgba(255, 120, 40, 0.25), inset 0 0 30px rgba(255, 120, 40, 0.12);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  opacity: 0; pointer-events: none; will-change: transform;
+  transition: opacity 0.5s ease;
+}
+.hud::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, rgba(255, 170, 100, 0.25), transparent);
+  height: 40%; transform: translateY(-100%);
+}
+.hud.show { opacity: 1; }
+.hud.show::before { animation: hud-sweep 1.4s ease-out 0.2s 1 both; }
+@keyframes hud-sweep { from { transform: translateY(-100%); } to { transform: translateY(260%); } }
+
+.hud-head { display: grid; gap: 2px; padding-bottom: 10px; margin-bottom: 12px; position: relative; }
+.hud-head::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: linear-gradient(90deg, var(--holo), rgba(255, 210, 150, 0.9) 60%, transparent);
+  transform-origin: left; transform: scaleX(0); transition: transform 0.7s ease 0.25s;
+}
+.hud.show .hud-head::after { transform: scaleX(1); }
+.hud-scan { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--holo); }
+.hud-title { margin: 0; font-size: clamp(26px, 2.2vw, 40px); font-weight: 600; letter-spacing: 0.04em; }
+.hud-section {
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--holo);
+  margin: 4px 0 6px;
+}
+.hud-data { margin: 0 0 12px; display: grid; gap: 4px; }
+.hud-row {
+  display: grid; grid-template-columns: 9.5em 1fr; gap: 12px; align-items: baseline;
+  font-size: clamp(13px, 0.95vw, 17px);
+}
+.hud-row dt { color: rgba(255, 228, 205, 0.7); }
+.hud-row dd { margin: 0; font-variant-numeric: tabular-nums; }
+.hud-analysis { margin: 0 0 10px; font-size: clamp(13px, 0.95vw, 17px); line-height: 1.45; }
+.hud-source { font-size: 10px; letter-spacing: 0.08em; color: rgba(255, 228, 205, 0.5); }
+.hud-row, .hud-analysis { opacity: 0; transform: translateX(-8px); }
+.hud.show .hud-row, .hud.show .hud-analysis {
+  opacity: 1; transform: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  transition-delay: calc(0.5s + var(--i, 0) * 0.12s);
+}
+
+.leader { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 0.4s; }
+.leader.show { opacity: 1; }
+.leader line { stroke: var(--holo); stroke-width: 1.5; filter: drop-shadow(0 0 4px var(--holo)); }
+
+.reticle {
+  position: absolute; left: -45px; top: -45px; width: 90px; height: 90px; pointer-events: none;
+  opacity: 0; transition: opacity 0.4s;
+}
+.reticle.show { opacity: 1; }
+.reticle svg { width: 100%; height: 100%; overflow: visible; }
+.reticle .hex { fill: rgba(190, 255, 120, 0.12); stroke: #c8ff7a; stroke-width: 2; }
+.reticle .ring { fill: none; stroke: var(--holo-soft); stroke-width: 1.2; stroke-dasharray: 6 5; transform-origin: 0 0; }
+.reticle.show .ring { animation: ring-spin 6s linear infinite; }
+.reticle .brackets { fill: none; stroke: var(--holo); stroke-width: 2; }
+.reticle.show .hex { animation: hex-pulse 1.6s ease-in-out infinite; }
+@keyframes ring-spin { to { transform: rotate(360deg); } }
+@keyframes hex-pulse { 50% { stroke-opacity: 0.45; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .phase, .card, .panel, .epic, .aerial-cap { transition: none; }
+  .phase, .card, .panel, .epic, .aerial-cap, .hud, .hud-row, .hud-analysis { transition: none !important; }
+  .reticle .ring, .reticle .hex, .hud::before { animation: none !important; }
 }

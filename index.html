@@ -26,6 +26,28 @@
 
   <div id="aerial-cap" class="aerial-cap"></div>
 
+  <svg id="leader" class="leader" aria-hidden="true"><line x1="0" y1="0" x2="0" y2="0"></line></svg>
+
+  <div id="reticle" class="reticle" aria-hidden="true">
+    <svg viewBox="-50 -50 100 100">
+      <polygon class="hex" points="0,-22 19,-11 19,11 0,22 -19,11 -19,-11"></polygon>
+      <circle class="ring" r="34"></circle>
+      <path class="brackets" d="M-30,-40 h-10 v10 M30,-40 h10 v10 M-30,40 h-10 v-10 M30,40 h10 v-10"></path>
+    </svg>
+  </div>
+
+  <aside id="info" class="hud" aria-live="polite">
+    <div class="hud-head">
+      <span class="hud-scan">Scan complete</span>
+      <h2 class="hud-title"></h2>
+    </div>
+    <div class="hud-section">Data</div>
+    <dl class="hud-data"></dl>
+    <div class="hud-section">Analysis</div>
+    <p class="hud-analysis"></p>
+    <div class="hud-source"></div>
+  </aside>
+
   <footer class="footer">
     <span id="mode" class="mode"></span>
     <span id="source" class="source"></span>

@@ -11,6 +11,46 @@ window.GLOBE_CONFIG = {
     phaseFinland: "Finland",
   },
 
+  // Oulun infolaatikko, joka avautuu, kun kamera pysähtyy Oulun kohdalle.
+  // {daylight} = tämän päivän valoisan ajan pituus Oulussa (lasketaan automaattisesti).
+  oulu: {
+    name: "Oulu",
+    lat: 65.0121,
+    lon: 25.4651,
+    data: [
+      ["Location", "65°01′N, 25°28′E"],
+      ["Founded", "8 April 1605"],
+      ["Population", "217,469"],
+      ["Region", "North Ostrobothnia, Finland"],
+      ["Arctic Circle", "≈ 170 km north"],
+      ["Daylight today", "{daylight}"],
+    ],
+    analysis:
+      "European Capital of Culture 2026. Home of the University of Oulu (est. 1958) " +
+      "and a northern hub for wireless, 6G and extended reality research.",
+    source: "Source: Wikipedia",
+  },
+
+  // Linnanmaan kampuksen infolaatikko (avautuu, kun kamera pysähtyy kampukselle).
+  // Lähteet: UArctic, Oamkin jäsenprofiili; Oamk, "About Oamk" (vanha.oamk.fi/en/about-oamk);
+  // Oamk, "Research and development" (vanha.oamk.fi/en/rdi). Tarkistettu 17.11.2026.
+  campusInfo: {
+    name: "Linnanmaa campus",
+    data: [
+      ["Location", "65°04′N, 25°28′E"],
+      ["Home to", "Oamk and the University of Oulu"],
+      ["Oamk founded", "1996"],
+      ["Oamk students", "≈ 9,000"],
+      ["Oamk staff", "460"],
+      ["Oamk fields", "Business · Engineering · Health and Social Care · ICT · Media and Performing Arts · Natural Resources"],
+    ],
+    analysis:
+      "Oamk's main campus, Oulu Campus Linnanmaa, is described as the largest campus in Europe " +
+      "under one roof. Oamk's research focuses on low-carbon solutions, digital solutions and " +
+      "business development, with particular investment in drone technology.",
+    source: "Sources: Oamk, UArctic",
+  },
+
   // Kohde: Oulun yliopiston Linnanmaan kampus
   target: { lat: 65.0592, lon: 25.4664 },
   finland: { lat: 64.6, lon: 26.0 },
@@ -22,8 +62,10 @@ window.GLOBE_CONFIG = {
     spin: 20,          // vapaa pyöriminen ennen lentoa (tavoite; EPIC-kuvan kanssa 10–30 s)
     flyToFinland: 8,   // lento Suomen yläpuolelle
     holdFinland: 4,    // tauko Suomen kohdalla
-    flyToTarget: 8,    // lento Linnanmaalle
-    holdTarget: 18,    // tauko Linnanmaalla (hankkeiden nimet näkyvissä)
+    flyToOulu: 6,      // lento Oulun yläpuolelle
+    holdOulu: 11,      // tauko Oulussa, infolaatikko näkyvissä
+    flyToTarget: 6,    // lento Linnanmaalle
+    holdTarget: 18,    // tauko Linnanmaalla (infolaatikko ja hankkeiden nimet näkyvissä)
     flyOut: 8,         // paluu avaruuteen, sitten silmukka alkaa alusta
   },
 
@@ -36,6 +78,7 @@ window.GLOBE_CONFIG = {
   // Kameran korkeudet metreinä
   heights: {
     finland: 1800000,
+    oulu: 60000,           // Oulun infolaatikon kohdalla
     target: 2600,          // kun Maanmittauslaitoksen ilmakuva on käytössä
     targetNoAerial: 9000,  // ilman ilmakuvaa (Sentinel-2 ei ole tarkka lähietäisyydeltä)
   },
@@ -58,7 +101,7 @@ window.GLOBE_CONFIG = {
     apiKey: "09b14ab6-b655-4016-86df-d15c5c38483c",
     url: "https://avoin-karttakuva.maanmittauslaitos.fi/avoin/wmts/1.0.0/ortokuva/default/WGS84_Pseudo-Mercator/{z}/{y}/{x}.jpg?api-key={key}",
     minLevel: 11,
-    maxLevel: 18,
+    maxLevel: 16, // avoin palvelu tarjoaa Pseudo-Mercator-tasot 0–16
     bounds: [25.2, 64.95, 25.75, 65.15], // länsi, etelä, itä, pohjoinen
     caption: "Aerial photo · National Land Survey of Finland",
     year: "", // kuvausvuosi, jos tiedossa (esim. "2024")

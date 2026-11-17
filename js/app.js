@@ -21,6 +21,10 @@
     epicImg: document.querySelector("#epic img"),
     epicCap: document.querySelector("#epic .epic-cap"),
     aerialCap: $("aerial-cap"),
+    info: $("info"),
+    reticle: $("reticle"),
+    leader: $("leader"),
+    leaderLine: document.querySelector("#leader line"),
     fps: $("fps"),
   };
 
@@ -97,7 +101,7 @@
 
   // Linnanmaan kampuksen merkki näkyy vasta lähempänä
   const marker = viewer.entities.add({
-    position: Cesium.Cartesian3.fromDegrees(C.target.lon, C.target.lat),
+    position: Cesium.Cartesian3.fromDegrees(C.oulu.lon, C.oulu.lat),
     point: {
       pixelSize: 12,
       color: Cesium.Color.fromCssColorString("#ffd166"),
@@ -113,15 +117,85 @@
       outlineColor: Cesium.Color.fromCssColorString("#0b1a2e"),
       outlineWidth: 4,
       style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-      pixelOffset: new Cesium.Cartesian2(0, -24),
+      pixelOffset: new Cesium.Cartesian2(0, -48),
       distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 2500000),
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
     },
   });
 
   // Merkissä lukee "Oulu" lennon ajan ja "Linnanmaa campus", kun kamera on pysähtynyt kampukselle
-  function setMarker(text) {
+  // Lennon ajan merkki on Oulun keskustassa; kampukselle pysähdyttäessä se siirtyy kampukselle.
+  function setMarker(text, place) {
     marker.label.text = text;
+    if (place) marker.position = Cesium.Cartesian3.fromDegrees(place.lon, place.lat);
+  }
+
+  // ---------- Oulun infolaatikko ----------
+  function daylightText(lat, date) {
+    // Valoisan ajan pituus (auringon keskipiste -0,833°), tarkkuus muutamia minuutteja
+    const start = Date.UTC(date.getUTCFullYear(), 0, 0);
+    const n = Math.floor((date - start) / 86400000);
+    const rad = Math.PI / 180;
+    const decl = -23.44 * Math.cos(((2 * Math.PI) / 365) * (n + 10));
+    const cosH = (Math.sin(-0.833 * rad) - Math.sin(lat * rad) * Math.sin(decl * rad)) /
+      (Math.cos(lat * rad) * Math.cos(decl * rad));
+    if (cosH >= 1) return "Polar night (0 h)";
+    if (cosH <= -1) return "Midnight sun (24 h)";
+    const hours = (2 * Math.acos(cosH)) / rad / 15;
+    const h = Math.floor(hours), m = Math.round((hours - h) * 60);
+    return `${h} h ${String(m).padStart(2, "0")} min`;
+  }
+  function buildInfo(o) {
+    ui.info.querySelector(".hud-title").textContent = o.name;
+    const dl = ui.info.querySelector(".hud-data");
+    dl.innerHTML = "";
+    o.data.forEach(([k, v], i) => {
+      const row = document.createElement("div");
+      row.className = "hud-row";
+      row.style.setProperty("--i", i);
+      const dt = document.createElement("dt");
+      dt.textContent = k;
+      const dd = document.createElement("dd");
+      dd.textContent = v.replace("{daylight}", daylightText(C.oulu.lat, new Date()));
+      row.append(dt, dd);
+      dl.append(row);
+    });
+    const an = ui.info.querySelector(".hud-analysis");
+    an.textContent = o.analysis;
+    an.style.setProperty("--i", o.data.length + 1);
+    ui.info.querySelector(".hud-source").textContent = o.source || "";
+  }
+  let infoOpen = false;
+  let infoAnchor = null;
+  // place = paikka, jonka oikealle puolelle laatikko tulee; info = laatikon sisältö
+  function showInfo(on, place, info) {
+    infoOpen = on;
+    if (on) {
+      buildInfo(info);
+      infoAnchor = Cesium.Cartesian3.fromDegrees(place.lon, place.lat);
+    }
+    ui.info.classList.toggle("show", on);
+    ui.reticle.classList.toggle("show", on);
+    ui.leader.classList.toggle("show", on);
+  }
+  // Laatikko seuraa Oulun paikkaa näytöllä ja on aina sen oikealla puolella
+  const scratch = new Cesium.Cartesian2();
+  function placeInfo() {
+    if (!infoOpen || !infoAnchor) return;
+    const p = scene.cartesianToCanvasCoordinates(infoAnchor, scratch);
+    if (!p) return;
+    const x = p.x, y = p.y;
+    ui.reticle.style.transform = `translate(${x}px, ${y}px)`;
+    const gap = Math.min(140, window.innerWidth * 0.08);
+    const boxX = x + gap;
+    const boxH = ui.info.offsetHeight;
+    const boxY = Math.max(16, Math.min(window.innerHeight - boxH - 60, y - boxH * 0.35));
+    ui.info.style.transform = `translate(${boxX}px, ${boxY}px)`;
+    const ly = Math.max(boxY + 24, Math.min(boxY + boxH - 24, y));
+    ui.leaderLine.setAttribute("x1", x + 28);
+    ui.leaderLine.setAttribute("y1", y);
+    ui.leaderLine.setAttribute("x2", boxX);
+    ui.leaderLine.setAttribute("y2", ly);
   }
 
   // ---------- Kuvatasot ----------
@@ -303,6 +377,7 @@
     const now = performance.now();
     const dt = (now - (scene._lastSpin || now)) / 1000;
     scene._lastSpin = now;
+    placeInfo();
     if (spinning && !paused && dt < 0.5) {
       // Kamera kiertää länteen, jolloin maapallo näyttää pyörivän oikeaan suuntaan.
       camera.rotate(Cesium.Cartesian3.UNIT_Z, -Cesium.Math.toRadians(C.spinDegPerSec * dt));
@@ -315,7 +390,8 @@
     camera.cancelFlight();
     ui.card.classList.remove("show");
     ui.aerialCap.classList.remove("show");
-    setMarker(C.texts.markerApproach || C.texts.marker);
+    setMarker(C.texts.markerApproach || C.texts.marker, C.oulu);
+    showInfo(false);
     camera.setView({ destination: spinStartPosition(), orientation: lookDown });
 
     while (id === runId) {
@@ -343,20 +419,29 @@
       if (!(await fly(fin.destination, T.flyToFinland, fin.orientation, id))) return;
       if (!(await wait(T.holdFinland, id))) return;
 
-      // 3. Linnanmaan kampus
+      // 3. Oulu: pysähdys ja infolaatikko
       setPhase(null);
+      const ov = viewOf(C.oulu.lat, C.oulu.lon, C.heights.oulu, -58);
+      if (!(await fly(ov.destination, T.flyToOulu, ov.orientation, id))) return;
+      showInfo(true, C.oulu, C.oulu);
+      if (!(await wait(T.holdOulu, id))) return;
+      showInfo(false);
+
+      // 4. Linnanmaan kampus
       const h = aerial ? C.heights.target : C.heights.targetNoAerial;
       const tv = viewOf(C.target.lat, C.target.lon, h, C.targetPitchDeg);
       if (!(await fly(tv.destination, T.flyToTarget, tv.orientation, id))) return;
-      setMarker(C.texts.marker);
+      setMarker(C.texts.marker, C.target);
+      showInfo(true, C.target, C.campusInfo);
       ui.card.classList.add("show");
       if (aerial) ui.aerialCap.classList.add("show");
       if (!(await wait(T.holdTarget, id))) return;
       ui.card.classList.remove("show");
       ui.aerialCap.classList.remove("show");
-      setMarker(C.texts.markerApproach || C.texts.marker);
+      showInfo(false);
+      setMarker(C.texts.markerApproach || C.texts.marker, C.oulu);
 
-      // 4. Takaisin avaruuteen ja alusta
+      // 5. Takaisin avaruuteen ja alusta
       setPhase(null);
       if (!(await fly(spinStartPosition(), T.flyOut, lookDown, id))) return;
     }

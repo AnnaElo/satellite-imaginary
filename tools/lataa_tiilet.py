@@ -34,7 +34,7 @@ def layers(nls_key):
     if nls_key:
         # Maanmittauslaitoksen uusin ortokuva (ilmakuva) Linnanmaalta
         out.append(dict(name="aerial", url=NLS + "/{z}/{y}/{x}.jpg?api-key=" + urllib.parse.quote(nls_key),
-                        levels=range(12, 18), bounds=LINNANMAA))
+                        levels=range(12, 17), bounds=LINNANMAA))
     return out
 
 

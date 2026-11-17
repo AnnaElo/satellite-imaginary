@@ -16,6 +16,9 @@
     source: $("source"),
     mode: $("mode"),
     panel: $("panel"),
+    epic: $("epic"),
+    epicImg: document.querySelector("#epic img"),
+    epicCap: document.querySelector("#epic .epic-cap"),
     fps: $("fps"),
   };
 
@@ -216,6 +219,7 @@
     } else {
       parts.push("Satelliittikuvat: NASA GIBS Blue Marble");
       parts.push("Sentinel-2 cloudless 2021, EOX IT Services GmbH (sis. muokattua Copernicus Sentinel -dataa 2021)");
+      if (epic) parts.unshift("Valokuva koko maapallosta: NASA DSCOVR / EPIC");
       if (dailyShown && dailyDates.length) {
         const sats = C.imagery.dailyLayers.map((d) => d.name).join(", ");
         parts.unshift(`Tuore kuva ${dailyRangeText()}: NASA GIBS / VIIRS (${sats})`);
@@ -270,10 +274,18 @@
     }, 350);
   }
 
-  // Aloituspaikka valitaan niin, että pyöriminen päättyy täsmälleen Oulun pituuspiirille.
+  // Pyörimisen aloituskohta ja kesto. Pyöriminen päättyy täsmälleen Oulun pituuspiirille.
+  // Jos EPIC-kuva on käytössä, aloitetaan samasta kohdasta kuin kuvassa näkyvä maapallo.
+  function spinPlan() {
+    if (epic) {
+      const delta = (((epic.lon - C.target.lon) % 360) + 360) % 360;
+      return { lon: epic.lon, lat: epic.lat, seconds: delta / C.spinDegPerSec };
+    }
+    return { lon: C.target.lon + C.spinDegPerSec * C.timing.spin, lat: 28, seconds: C.timing.spin };
+  }
   function spinStartPosition() {
-    const lon = C.target.lon + C.spinDegPerSec * C.timing.spin;
-    return Cesium.Cartesian3.fromDegrees(lon, 28, spaceHeight());
+    const p = spinPlan();
+    return Cesium.Cartesian3.fromDegrees(p.lon, p.lat, spaceHeight());
   }
   // Korkeus, jolla maapallo täyttää halutun osan näytön korkeudesta (näytön muodosta riippumatta).
   function spaceHeight() {
@@ -310,10 +322,22 @@
     camera.setView({ destination: spinStartPosition(), orientation: lookDown });
 
     while (id === runId) {
+      // 0. Aito valokuva koko maapallosta (DSCOVR EPIC), joka vaihtuu 3D-palloksi
+      if (epic) {
+        sizeEpic();
+        setPhase(C.texts.phaseEpic);
+        ui.epic.classList.add("show");
+        if (!(await wait(T.epicHold, id))) return;
+        ui.epic.classList.remove("show");
+        setPhase(C.texts.phaseEarth);
+        if (!(await wait(T.epicFade, id))) return;
+      } else {
+        setPhase(C.texts.phaseEarth);
+      }
+
       // 1. Vapaa pyöriminen
-      setPhase(C.texts.phaseEarth);
       spinning = true;
-      if (!(await wait(T.spin, id))) return;
+      if (!(await wait(spinPlan().seconds, id))) return;
       spinning = false;
 
       // 2. Suomi
@@ -432,5 +456,93 @@
   ui.card.querySelector(".title").textContent = C.texts.title;
   ui.card.querySelector(".sub").textContent = C.texts.subtitle;
 
-  setupImagery().then(run);
+  // ---------- DSCOVR EPIC: aito valokuva koko valaistusta maapallosta ----------
+  let epic = null;
+  const EPIC_FOV_DEG = 0.61; // EPIC-kameran näkökenttä, kuva 2048 x 2048 px
+
+  function pickEpic(list) {
+    // Valitaan kuva, jonka keskipituuspiiri on sopivan matkan Oulusta itään, jotta pyöriminen
+    // kestää noin tavoiteajan ja päättyy Oulun kohdalle.
+    const want = C.spinDegPerSec * C.timing.spin;
+    let best = null, bestScore = Infinity;
+    for (const it of list) {
+      const lon = it.centroid_coordinates.lon;
+      const delta = (((lon - C.target.lon) % 360) + 360) % 360;
+      const score = Math.abs(delta - want);
+      if (score < bestScore) { best = it; bestScore = score; }
+    }
+    return best;
+  }
+  function epicInfo(it, src) {
+    const p = it.dscovr_j2000_position || {};
+    const dist = Math.hypot(p.x || 0, p.y || 0, p.z || 0) || 1500000; // km
+    const diskDeg = (2 * Math.atan(6371 / dist) * 180) / Math.PI;
+    return {
+      src,
+      date: it.date, // UTC
+      lat: it.centroid_coordinates.lat,
+      lon: it.centroid_coordinates.lon,
+      distKm: dist,
+      diskFraction: Math.min(0.95, diskDeg / EPIC_FOV_DEG),
+    };
+  }
+  async function loadEpic() {
+    if (!C.epic || !C.epic.enabled) return null;
+    if (mode !== "online") return LOCAL && LOCAL.epic ? LOCAL.epic : null;
+    for (const api of C.epic.apis) {
+      try {
+        const r = await fetch(api, { cache: "no-store" });
+        if (!r.ok) continue;
+        const list = await r.json();
+        if (!Array.isArray(list) || !list.length) continue;
+        const it = pickEpic(list);
+        const [d] = it.date.split(" ");
+        const [y, m, dd] = d.split("-");
+        const src = C.epic.imageUrl
+          .replace("{y}", y).replace("{m}", m).replace("{d}", dd).replace("{image}", it.image);
+        const ok = await probe(src, 15000);
+        if (ok) return epicInfo(it, src);
+      } catch (e) { /* kokeillaan seuraavaa */ }
+    }
+    return null;
+  }
+  function sizeEpic() {
+    if (!epic) return;
+    // Maapallon halkaisija näytöllä samaksi kuin 3D-pallon avaruusnäkymässä
+    const fovy = camera.frustum.fovy;
+    const fill = C.globeFill || 0.72;
+    const diskPx = (window.innerHeight * Math.tan((fovy / 2) * fill)) / Math.tan(fovy / 2);
+    const imgPx = diskPx / epic.diskFraction;
+    ui.epicImg.style.width = ui.epicImg.style.height = `${imgPx}px`;
+  }
+  window.addEventListener("resize", sizeEpic);
+
+  function showEpicCaption() {
+    if (!epic) return;
+    const t = new Date(epic.date.replace(" ", "T") + "Z");
+    const when = t.toLocaleString("fi-FI", {
+      day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit",
+      timeZone: "Europe/Helsinki",
+    });
+    const mkm = (epic.distKm / 1e6).toLocaleString("fi-FI", { maximumFractionDigits: 1 });
+    ui.epicCap.textContent = `Valokuva ${when} · ${mkm} milj. km:n etäisyydeltä · NASA DSCOVR / EPIC`;
+  }
+
+  setupImagery()
+    .then(loadEpic)
+    .then((e) => {
+      epic = e;
+      if (epic) {
+        ui.epicImg.src = epic.src;
+        showEpicCaption();
+        sizeEpic();
+        // Ensimmäisellä kerralla valokuva näkyy heti ilman häivytystä
+        ui.epic.style.transition = "none";
+        ui.epic.classList.add("show");
+        void ui.epic.offsetWidth;
+        ui.epic.style.transition = "";
+      }
+      updateFooter();
+    })
+    .finally(run);
 })();

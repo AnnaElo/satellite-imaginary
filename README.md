@@ -12,7 +12,7 @@ Toimii sellaisenaan staattisena sivuna (esim. GitHub Pages). Kuvat haetaan suora
    ```
    python tools/lataa_tiilet.py --daily
    ```
-   Lataa noin 6 500 tiiltä (pohjakuva, Suomi ja Oulu tarkkana, `--daily` lisää kahden viime päivän tuoreet kuvat). Keskeytyneen latauksen voi ajaa uudelleen, jo ladatut ohitetaan.
+   Lataa noin 6 500 tiiltä ja tuoreimman EPIC-valokuvan (pohjakuva, Suomi ja Oulu tarkkana, `--daily` lisää kahden viime päivän tuoreet kuvat). Keskeytyneen latauksen voi ajaa uudelleen, jo ladatut ohitetaan.
 2. **Tapahtumassa** tuplaklikkaa `Käynnistä (Windows).bat` tai `Käynnistä (Mac).command`. Selain avautuu ja esitys käyttää vain paikallisia tiedostoja. Paina F, niin esitys menee koko näytölle, ja H, jos haluat piilottaa valikon.
 
 Selain ei aja 3D-moottoria suoraan tiedostosta, joten käynnistystiedosto avaa pienen paikallisen palvelimen (Windowsissa PowerShell, Macissa Python). Mitään ei tarvitse asentaa.
@@ -42,6 +42,8 @@ Oikeassa yläkulmassa on valikko, josta valitaan katselutapa:
 Tekstit, ajoitukset, korkeudet ja kuvalähteet ovat tiedostossa `js/config.js`.
 
 ## Kuvalähteet (avoin data)
+
+- **NASA DSCOVR / EPIC**: aito valokuva koko valaistusta maapallosta noin 1,5 milj. km:n päästä. Esitys alkaa tällä kuvalla, joka vaihtuu 3D-palloksi. Tuorein kuva haetaan automaattisesti (julkaisuviive yleensä 12–36 h); offline-latausskripti lataa sen mukaan.
 
 - **NASA GIBS, Blue Marble Next Generation**: pilvetön koko maapallon pohjakuva.
 - **Sentinel-2 cloudless 2021, EOX IT Services GmbH** (sisältää muokattua Copernicus Sentinel -dataa 2021): tarkka pilvetön kuva Suomesta ja Oulusta. Lisenssi CC BY-NC-SA 4.0 (ei-kaupallinen käyttö).

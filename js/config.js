@@ -4,6 +4,7 @@ window.GLOBE_CONFIG = {
   texts: {
     title: "FINverse · Ouluversumi",
     subtitle: "Oulu, Suomi",
+    phaseEpic: "Maapallo tänään",
     phaseEarth: "Maapallo avaruudesta",
     phaseFinland: "Suomi",
     phaseOulu: "Oulu",
@@ -15,7 +16,9 @@ window.GLOBE_CONFIG = {
 
   // Ajoitukset sekunteina
   timing: {
-    spin: 20,          // vapaa pyöriminen ennen lentoa
+    epicHold: 10,      // aito EPIC-valokuva koko maapallosta näkyvissä
+    epicFade: 2.5,     // valokuva vaihtuu 3D-palloksi
+    spin: 20,          // vapaa pyöriminen ennen lentoa (tavoite; EPIC-kuvan kanssa 10–30 s)
     flyToFinland: 8,   // lento Suomen yläpuolelle
     holdFinland: 4,    // tauko Suomen kohdalla
     flyToOulu: 7,      // lento Ouluun
@@ -33,6 +36,17 @@ window.GLOBE_CONFIG = {
   heights: {
     finland: 1800000,
     oulu: 18000,
+  },
+
+  // Aito valokuva koko maapallosta: NASA DSCOVR -satelliitin EPIC-kamera noin 1,5 milj. km:n päästä.
+  // Kuvat julkaistaan yleensä 12–36 tunnin viiveellä.
+  epic: {
+    enabled: true,
+    apis: [
+      "https://epic.gsfc.nasa.gov/api/natural",
+      "https://api.nasa.gov/EPIC/api/natural?api_key=DEMO_KEY",
+    ],
+    imageUrl: "https://epic.gsfc.nasa.gov/archive/natural/{y}/{m}/{d}/png/{image}.png",
   },
 
   // Satelliittikuvat (avoin data)

@@ -76,6 +76,43 @@ def fetch(job):
     return f"fail {url}: {err}"
 
 
+EPIC_APIS = [
+    os.environ.get("MAAPALLO_EPIC_API", "https://epic.gsfc.nasa.gov/api/natural"),
+    "https://api.nasa.gov/EPIC/api/natural?api_key=DEMO_KEY",
+]
+EPIC_IMG = os.environ.get("MAAPALLO_EPIC_IMG", "https://epic.gsfc.nasa.gov/archive/natural/{y}/{m}/{d}/png/{image}.png")
+OULU_LON, SPIN_DEG = 25.4651, 6 * 20   # sama valinta kuin js/app.js:ssä
+
+
+def download_epic():
+    """Lataa tuoreimman DSCOVR EPIC -valokuvan koko maapallosta kansioon tiles/epic/."""
+    for api in EPIC_APIS:
+        try:
+            with urllib.request.urlopen(urllib.request.Request(api, headers={"User-Agent": "maapallo-offline/1.0"}), timeout=30) as r:
+                items = json.load(r)
+            if not items:
+                continue
+            it = min(items, key=lambda i: abs(((i["centroid_coordinates"]["lon"] - OULU_LON) % 360) - SPIN_DEG))
+            y, m, d = it["date"].split(" ")[0].split("-")
+            url = EPIC_IMG.format(y=y, m=m, d=d, image=it["image"])
+            path = os.path.join(TILES, "epic", it["image"] + ".png")
+            res = fetch((url, path))
+            if res.startswith("fail"):
+                print(res, file=sys.stderr)
+                continue
+            p = it.get("dscovr_j2000_position") or {}
+            dist = math.sqrt(sum(float(p.get(k, 0)) ** 2 for k in "xyz")) or 1500000
+            disk = 2 * math.degrees(math.atan(6371 / dist)) / 0.61
+            print(f"EPIC-valokuva {it['date']} UTC ladattu")
+            return dict(src=f"tiles/epic/{it['image']}.png", date=it["date"],
+                        lat=it["centroid_coordinates"]["lat"], lon=it["centroid_coordinates"]["lon"],
+                        distKm=dist, diskFraction=min(0.95, disk))
+        except Exception as ex:  # noqa: BLE001
+            print(f"EPIC: {api}: {ex}", file=sys.stderr)
+    print("EPIC-valokuvaa ei saatu, esitys alkaa suoraan 3D-pallosta.", file=sys.stderr)
+    return None
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--daily", action="store_true", help="lataa myös kahden viime päivän VIIRS-kuvat")
@@ -121,9 +158,11 @@ def main():
             if done % 200 == 0 or done == len(jobs):
                 print(f"  {done}/{len(jobs)} valmiina")
 
+    epic = download_epic()
+
     with open(os.path.join(TILES, "manifest.js"), "w", encoding="utf-8") as f:
         f.write("// Luotu " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M") + " tools/lataa_tiilet.py\n")
-        f.write("window.LOCAL_TILES = " + json.dumps({"layers": manifest}, indent=2) + ";\n")
+        f.write("window.LOCAL_TILES = " + json.dumps({"layers": manifest, "epic": epic}, indent=2, ensure_ascii=False) + ";\n")
     print("Valmis." if not fails else f"Valmis, {fails} tiiltä epäonnistui (aja uudelleen, jo ladatut ohitetaan).")
     sys.exit(1 if fails else 0)
 

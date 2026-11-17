@@ -12,6 +12,19 @@ body.idle, body.idle * { cursor: none !important; }
 #globe { position: absolute; inset: 0; }
 .cesium-viewer-bottom, .cesium-widget-credits { display: none !important; }
 
+.epic {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: #000; opacity: 0; pointer-events: none;
+  transition: opacity 2.5s ease;
+}
+.epic.show { opacity: 1; }
+.epic img { display: block; max-width: none; object-fit: contain; }
+.epic-cap {
+  position: absolute; left: 0; right: 0; bottom: 5vh; text-align: center;
+  font-size: clamp(12px, 1vw, 18px); color: var(--muted); letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
 .phase {
   position: absolute; top: 6vh; left: 0; right: 0; text-align: center;
   font-size: clamp(20px, 2.4vw, 40px); font-weight: 300; letter-spacing: 0.18em;
@@ -66,5 +79,5 @@ body.idle, body.idle * { cursor: none !important; }
 .panel .fps { font-variant-numeric: tabular-nums; color: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) {
-  .phase, .card, .panel { transition: none; }
+  .phase, .card, .panel, .epic { transition: none; }
 }

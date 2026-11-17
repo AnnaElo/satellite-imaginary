@@ -115,8 +115,10 @@
   });
 
   // ---------- Kuvatasot ----------
-  let dailyLayer = null;
-  let dailyDateIso = null;
+  const dailyLayers = [];   // tuoreet satelliittikuvat, vanhin ensin
+  let dailyDates = [];      // ISO-päivämäärät, vanhin ensin
+  let dailyShown = false;
+  const hasDaily = () => dailyLayers.length > 0;
   let mode = "online";
 
   async function setupImagery() {
@@ -128,10 +130,12 @@
       mode = "online";
       layers.addImageryProvider(wmLayer(im.baseUrl, 0, im.baseMaxLevel));
       layers.addImageryProvider(wmLayer(im.detailUrl, im.detailMinLevel, im.detailMaxLevel));
-      dailyDateIso = isoDateDaysAgo(im.dailyDaysBack);
-      dailyLayer = layers.addImageryProvider(
-        wmLayer(im.dailyUrl.replace("{time}", dailyDateIso), 0, im.dailyMaxLevel)
-      );
+      dailyDates = im.dailyDaysBack.map(isoDateDaysAgo);
+      for (const date of dailyDates)
+        for (const sat of im.dailyLayers)
+          dailyLayers.push(layers.addImageryProvider(
+            wmLayer(im.dailyUrl.replace("{layer}", sat.id).replace("{time}", date), 0, im.dailyMaxLevel)
+          ));
     } else if (LOCAL) {
       mode = "offline";
       for (const l of LOCAL.layers) {
@@ -139,7 +143,10 @@
         const layer = layers.addImageryProvider(
           wmLayer(`tiles/${l.name}/{z}/{x}/{y}.${l.ext || "jpg"}`, l.minLevel, l.maxLevel, rect)
         );
-        if (l.name === "daily") { dailyLayer = layer; dailyDateIso = l.date; }
+        if (l.group === "daily") {
+          dailyLayers.push(layer);
+          if (l.date && !dailyDates.includes(l.date)) dailyDates.push(l.date);
+        }
       }
     } else {
       mode = "fallback";
@@ -149,13 +156,14 @@
       layers.addImageryProvider(provider);
     }
 
-    if (dailyLayer) {
-      // NASA palauttaa kuvaamattomat alueet (yöpuoli, ratojen välit) mustina.
-      // Muutetaan musta läpinäkyväksi, jolloin pilvetön pohjakuva näkyy niiden alta.
-      dailyLayer.colorToAlpha = Cesium.Color.BLACK;
-      dailyLayer.colorToAlphaThreshold = im.dailyBlackThreshold ?? 0.06;
-      dailyLayer.show = im.showDailyAtStart;
+    // NASA palauttaa kuvaamattomat alueet (napayö, ratojen välit) mustina.
+    // Muutetaan musta läpinäkyväksi, jolloin alempi kuva tai pilvetön pohjakuva näkyy niiden alta.
+    dailyDates.sort();
+    for (const l of dailyLayers) {
+      l.colorToAlpha = Cesium.Color.BLACK;
+      l.colorToAlphaThreshold = im.dailyBlackThreshold ?? 0.06;
     }
+    showDaily(im.showDailyAtStart);
     updateFooter();
     updatePanel();
     if (mode === "online") preloadOulu();
@@ -191,6 +199,16 @@
     for (let k = 0; k < 6; k++) next();
   }
 
+  function showDaily(on) {
+    dailyShown = !!on && hasDaily();
+    for (const l of dailyLayers) l.show = dailyShown;
+  }
+  function dailyRangeText() {
+    if (!dailyDates.length) return "";
+    const a = fiDate(dailyDates[0]), b = fiDate(dailyDates[dailyDates.length - 1]);
+    return a === b ? a : `${a.split(".").slice(0, 2).join(".")}.–${b}`;
+  }
+
   function updateFooter() {
     const parts = [];
     if (mode === "fallback") {
@@ -198,8 +216,9 @@
     } else {
       parts.push("Satelliittikuvat: NASA GIBS Blue Marble");
       parts.push("Sentinel-2 cloudless 2021, EOX IT Services GmbH (sis. muokattua Copernicus Sentinel -dataa 2021)");
-      if (dailyLayer && dailyLayer.show && dailyDateIso) {
-        parts.unshift(`Päivän kuva ${fiDate(dailyDateIso)}: NASA GIBS / VIIRS NOAA-20`);
+      if (dailyShown && dailyDates.length) {
+        const sats = C.imagery.dailyLayers.map((d) => d.name).join(", ");
+        parts.unshift(`Tuore kuva ${dailyRangeText()}: NASA GIBS / VIIRS (${sats})`);
       }
     }
     ui.source.textContent = parts.join(" · ");
@@ -269,6 +288,14 @@
     const now = performance.now();
     const dt = (now - (scene._lastSpin || now)) / 1000;
     scene._lastSpin = now;
+    // Tuore kuva häivytetään lähelle zoomatessa (sen tarkkuus on n. 250 m), jolloin
+    // Oulun tarkka Sentinel-2-kuva näkyy.
+    if (dailyShown) {
+      const im = C.imagery;
+      const h = camera.positionCartographic.height;
+      const a = Cesium.Math.clamp((h - im.dailyFadeTo) / (im.dailyFadeFrom - im.dailyFadeTo), 0, 1);
+      for (const l of dailyLayers) l.alpha = a;
+    }
     if (spinning && !paused && dt < 0.5) {
       // Kamera kiertää länteen, jolloin maapallo näyttää pyörivän oikeaan suuntaan.
       camera.rotate(Cesium.Cartesian3.UNIT_Z, -Cesium.Math.toRadians(C.spinDegPerSec * dt));
@@ -319,8 +346,8 @@
 
   // ---------- Valikko ja näppäimet ----------
   function setDaily(on) {
-    if (!dailyLayer) return;
-    dailyLayer.show = on;
+    if (!hasDaily()) return;
+    showDaily(on);
     updateFooter();
     updatePanel();
   }
@@ -348,8 +375,8 @@
     const on = {
       online: mode === "online",
       offline: mode !== "online",
-      clear: !(dailyLayer && dailyLayer.show),
-      daily: !!(dailyLayer && dailyLayer.show),
+      clear: !dailyShown,
+      daily: dailyShown,
       hq: !light,
       lite: light,
       pause: paused,
@@ -358,8 +385,8 @@
       const a = b.dataset.act;
       if (a in on) b.setAttribute("aria-pressed", String(on[a]));
       if (a === "daily") {
-        b.disabled = !dailyLayer;
-        b.title = dailyLayer ? `NASA VIIRS ${fiDate(dailyDateIso)}` : "Ei saatavilla tässä tilassa";
+        b.disabled = !hasDaily();
+        b.title = hasDaily() ? `NASA VIIRS ${dailyRangeText()}` : "Ei saatavilla tässä tilassa";
       }
     });
     ui.panel.querySelector('[data-act="pause"]').textContent = paused ? "Jatka" : "Tauko";
@@ -375,7 +402,7 @@
     const k = e.key.toLowerCase();
     if (k === " ") { actions.pause(); e.preventDefault(); }
     else if (k === "r") actions.restart();
-    else if (k === "d" && dailyLayer) setDaily(!dailyLayer.show);
+    else if (k === "d" && hasDaily()) setDaily(!dailyShown);
     else if (k === "f") toggleFullscreen();
     else if (k === "h") ui.panel.classList.toggle("hidden");
   });

@@ -12,7 +12,7 @@ Toimii sellaisenaan staattisena sivuna (esim. GitHub Pages). Kuvat haetaan suora
    ```
    python tools/lataa_tiilet.py --daily
    ```
-   Lataa noin 6 500 tiiltä (pohjakuva, Suomi ja Oulu tarkkana, `--daily` lisää eilisen päiväkuvan). Keskeytyneen latauksen voi ajaa uudelleen, jo ladatut ohitetaan.
+   Lataa noin 6 500 tiiltä (pohjakuva, Suomi ja Oulu tarkkana, `--daily` lisää kahden viime päivän tuoreet kuvat). Keskeytyneen latauksen voi ajaa uudelleen, jo ladatut ohitetaan.
 2. **Tapahtumassa** tuplaklikkaa `Käynnistä (Windows).bat` tai `Käynnistä (Mac).command`. Selain avautuu ja esitys käyttää vain paikallisia tiedostoja. Paina F, niin esitys menee koko näytölle, ja H, jos haluat piilottaa valikon.
 
 Selain ei aja 3D-moottoria suoraan tiedostosta, joten käynnistystiedosto avaa pienen paikallisen palvelimen (Windowsissa PowerShell, Macissa Python). Mitään ei tarvitse asentaa.
@@ -24,7 +24,7 @@ Selain ei aja 3D-moottoria suoraan tiedostosta, joten käynnistystiedosto avaa p
 Oikeassa yläkulmassa on valikko, josta valitaan katselutapa:
 
 - **Lähde:** Verkko (kuvat suoraan NASAlta ja Copernicukselta) tai Offline (vain kansion `tiles/` kuvat)
-- **Kuva:** Pilvetön kuvakooste tai eilinen satelliittikuva (NASA VIIRS, pilvineen)
+- **Kuva:** Pilvetön kuvakooste tai Tuore (kolmen VIIRS-satelliitin kuvat kahdelta viime päivältä pilvineen; napayön alue näytetään pilvettömänä)
 - **Laatu:** Tarkka (näytön täysi tarkkuus) tai Kevyt (heikoille koneille)
 - **Esitys:** Tauko, Alusta, Koko näyttö
 - Ruudunpäivitysnopeus (FPS) näkyy valikon alareunassa
@@ -33,7 +33,7 @@ Oikeassa yläkulmassa on valikko, josta valitaan katselutapa:
 |---|---|
 | Välilyönti | Tauko / jatka |
 | R | Aloita alusta |
-| D | Eilinen satelliittikuva päälle / pois |
+| D | Tuore satelliittikuva päälle / pois |
 | F | Koko näyttö |
 | H | Piilota / näytä valikko |
 
@@ -45,7 +45,7 @@ Tekstit, ajoitukset, korkeudet ja kuvalähteet ovat tiedostossa `js/config.js`.
 
 - **NASA GIBS, Blue Marble Next Generation**: pilvetön koko maapallon pohjakuva.
 - **Sentinel-2 cloudless 2021, EOX IT Services GmbH** (sisältää muokattua Copernicus Sentinel -dataa 2021): tarkka pilvetön kuva Suomesta ja Oulusta. Lisenssi CC BY-NC-SA 4.0 (ei-kaupallinen käyttö).
-- **NASA GIBS, VIIRS NOAA-20 Corrected Reflectance**: edellisen päivän satelliittikuva (näppäin D).
+- **NASA GIBS, VIIRS Corrected Reflectance** (Suomi NPP, NOAA-20, NOAA-21): kahden viime päivän satelliittikuvat yhdistettynä, tuorein päällimmäisenä (Tuore / näppäin D).
 - Ilman verkkoyhteyttä: paikalliset tiilet kansiosta `tiles/` tai Cesiumin mukana tuleva Natural Earth II.
 
 3D-moottori: [CesiumJS](https://cesium.com/platform/cesiumjs/) 1.120 (Apache 2.0), mukana kansiossa `vendor/cesium`.

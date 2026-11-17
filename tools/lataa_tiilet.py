@@ -3,7 +3,7 @@
 
 Aja koneella, jossa on verkkoyhteys, mieluiten päivää ennen tapahtumaa:
     python tools/lataa_tiilet.py            (pohjakuva + Suomi + Oulu)
-    python tools/lataa_tiilet.py --daily    (lisäksi eilinen VIIRS-päiväkuva)
+    python tools/lataa_tiilet.py --daily    (lisäksi kahden viime päivän VIIRS-kuvat)
 
 Kirjoittaa tiles/manifest.js, jonka avulla esitys löytää tiilet ilman verkkoa.
 """
@@ -20,18 +20,27 @@ FINLAND = (19.0, 59.5, 32.0, 70.2)   # länsi, etelä, itä, pohjoinen
 OULU = (24.7, 64.75, 26.2, 65.25)
 
 
-def layers(daily_date):
+DAILY_SATS = ["VIIRS_SNPP_CorrectedReflectance_TrueColor",
+              "VIIRS_NOAA20_CorrectedReflectance_TrueColor",
+              "VIIRS_NOAA21_CorrectedReflectance_TrueColor"]
+
+
+def layers(daily_dates):
     out = [
         dict(name="base", url=GIBS + "/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg",
              levels=range(0, 6), bounds=None),
+    ]
+    # Tuoreet kuvat: vanhin päivä ensin, jotta uusin jää päällimmäiseksi
+    for date in daily_dates:
+        for sat in DAILY_SATS:
+            short = sat.split("_")[1].lower()
+            out.append(dict(name=f"daily-{date}-{short}", group="daily", date=date,
+                            url=GIBS + f"/{sat}/default/{date}/GoogleMapsCompatible_Level9/{{z}}/{{y}}/{{x}}.png",
+                            levels=range(0, 5), bounds=None, ext="png"))
+    out += [
         dict(name="finland", url=EOX + "/{z}/{y}/{x}.jpg", levels=range(5, 11), bounds=FINLAND),
         dict(name="oulu", url=EOX + "/{z}/{y}/{x}.jpg", levels=range(11, 14), bounds=OULU),
     ]
-    if daily_date:
-        out.insert(1, dict(name="daily", date=daily_date,
-                           url=GIBS + "/VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/" + daily_date
-                           + "/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
-                           levels=range(0, 6), bounds=None, ext="png"))
     return out
 
 
@@ -69,15 +78,16 @@ def fetch(job):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--daily", action="store_true", help="lataa myös eilisen päivän VIIRS-kuva")
+    ap.add_argument("--daily", action="store_true", help="lataa myös kahden viime päivän VIIRS-kuvat")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--dry-run", action="store_true", help="näytä vain tiilten määrä")
     a = ap.parse_args()
 
-    daily_date = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)).strftime("%Y-%m-%d") if a.daily else None
+    now = datetime.datetime.now(datetime.timezone.utc)
+    daily_dates = [(now - datetime.timedelta(days=d)).strftime("%Y-%m-%d") for d in (2, 1)] if a.daily else []
     manifest = []
     jobs = []
-    for L in layers(daily_date):
+    for L in layers(daily_dates):
         count = 0
         for z in L["levels"]:
             xs, ys = tile_range(z, L["bounds"])
@@ -92,6 +102,8 @@ def main():
             entry["bounds"] = list(L["bounds"])
         if L.get("date"):
             entry["date"] = L["date"]
+        if L.get("group"):
+            entry["group"] = L["group"]
         if L.get("ext"):
             entry["ext"] = L["ext"]
         manifest.append(entry)

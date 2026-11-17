@@ -48,12 +48,21 @@ window.GLOBE_CONFIG = {
     detailMinLevel: 3,
     detailMaxLevel: 15,
 
-    // Päivittäinen satelliittikuva (NASA GIBS, VIIRS NOAA-20). {time} = eilinen päivä (UTC).
-    // PNG, jotta kuvaamattomat alueet (yö, ratojen välit) ovat läpinäkyviä ja pohjakuva näkyy niiden alta.
+    // Tuoreet satelliittikuvat (NASA GIBS, VIIRS). Kolmen satelliitin kuvat kahdelta viime päivältä
+    // yhdistetään: tuorein päällimmäisenä, vanhempi täyttää aukot. {layer} ja {time} täytetään alla olevista.
+    // PNG + musta läpinäkyväksi, jolloin kuvaamattomat kohdat (esim. napayö) näyttävät pilvettömän pohjakuvan.
     dailyUrl:
-      "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/{time}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
+      "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/{layer}/default/{time}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
+    dailyLayers: [
+      { id: "VIIRS_SNPP_CorrectedReflectance_TrueColor", name: "Suomi NPP" },
+      { id: "VIIRS_NOAA20_CorrectedReflectance_TrueColor", name: "NOAA-20" },
+      { id: "VIIRS_NOAA21_CorrectedReflectance_TrueColor", name: "NOAA-21" },
+    ],
+    dailyDaysBack: [2, 1],  // vanhin ensin; viimeisin jää päällimmäiseksi
     dailyMaxLevel: 9,
-    dailyDaysBack: 1,
+    // Tuore kuva häivytetään lähelle zoomatessa, jotta Oulun tarkka Sentinel-2-kuva näkyy (metreinä)
+    dailyFadeFrom: 1000000,
+    dailyFadeTo: 250000,
     // Kuinka tummat pikselit tulkitaan kuvaamattomiksi (0–1). Nosta, jos reunoille jää tummaa.
     dailyBlackThreshold: 0.06,
     showDailyAtStart: false,

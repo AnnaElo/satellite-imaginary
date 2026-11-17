@@ -44,11 +44,11 @@ Esitys on tilakone (`run()` tiedostossa `js/app.js`), joka toistuu silmukkana. G
 stateDiagram-v2
     direction LR
     [*] --> epic
-    epic: Earth today<br/>(EPIC-valokuva, 10 s)
-    spin: Earth from space<br/>(3D-pallo pyörii, 20 s)
-    finland: Finland<br/>(lento + tauko)
-    oulu: Oulu<br/>(infolaatikko, 11 s)
-    campus: Linnanmaa campus<br/>(infolaatikko, FINverse-kortti,<br/>ilmakuva, 18 s)
+    epic: Earth today, EPIC-valokuva (10 s)
+    spin: Earth from space, pallo pyörii (20 s)
+    finland: Finland, lento ja tauko
+    oulu: Oulu, infolaatikko (11 s)
+    campus: Linnanmaa campus, infolaatikko ja FINverse-kortti (18 s)
     out: Paluu avaruuteen
     epic --> spin: kuva häivytetään palloksi
     spin --> finland

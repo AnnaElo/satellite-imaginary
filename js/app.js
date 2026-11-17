@@ -15,7 +15,8 @@
     card: $("card"),
     source: $("source"),
     mode: $("mode"),
-    hint: $("hint"),
+    panel: $("panel"),
+    fps: $("fps"),
   };
 
   // ---------- Apufunktiot ----------
@@ -70,14 +71,18 @@
   const scene = viewer.scene;
   const camera = viewer.camera;
   // Tarkkuus: ?kevyt = kevyempi tila heikoille koneille. Muuten enintään 2x näytön tiheys.
-  const light = params.has("kevyt");
-  const dpr = window.devicePixelRatio || 1;
-  viewer.resolutionScale = light ? 1 / dpr : Math.min(dpr, 2) / dpr;
+  let light = params.has("kevyt");
+  function applyQuality() {
+    const dpr = window.devicePixelRatio || 1;
+    viewer.resolutionScale = light ? 1 / dpr : Math.min(dpr, 2) / dpr;
+    scene.globe.maximumScreenSpaceError = light ? 3 : 1.5;
+  }
+  applyQuality();
   scene.postProcessStages.fxaa.enabled = true;
   scene.fog.enabled = true;
   scene.globe.enableLighting = false;
   scene.globe.showGroundAtmosphere = true;
-  scene.globe.maximumScreenSpaceError = light ? 3 : 2;
+  scene.globe.loadingDescendantLimit = 40;
   scene.globe.tileCacheSize = 1000;
   scene.globe.preloadSiblings = true;
   scene.globe.baseColor = Cesium.Color.fromCssColorString("#0b1a2e");
@@ -132,7 +137,7 @@
       for (const l of LOCAL.layers) {
         const rect = l.bounds ? Cesium.Rectangle.fromDegrees(...l.bounds) : undefined;
         const layer = layers.addImageryProvider(
-          wmLayer(`tiles/${l.name}/{z}/{x}/{y}.jpg`, l.minLevel, l.maxLevel, rect)
+          wmLayer(`tiles/${l.name}/{z}/{x}/{y}.${l.ext || "jpg"}`, l.minLevel, l.maxLevel, rect)
         );
         if (l.name === "daily") { dailyLayer = layer; dailyDateIso = l.date; }
       }
@@ -146,6 +151,38 @@
 
     if (dailyLayer) dailyLayer.show = im.showDailyAtStart;
     updateFooter();
+    updatePanel();
+    if (mode === "online") preloadOulu();
+  }
+
+  // Ladataan Oulun ja lentoreitin tarkat tiilet valmiiksi selaimen välimuistiin,
+  // jotta lähikuva on terävä heti laskeutumisen jälkeen.
+  function preloadOulu() {
+    const im = C.imagery;
+    const t = C.target;
+    const urls = [];
+    const box = { 9: 1.2, 10: 0.8, 11: 0.5, 12: 0.3, 13: 0.18, 14: 0.1 };
+    for (const [zs, d] of Object.entries(box)) {
+      const z = Number(zs);
+      if (z > im.detailMaxLevel) continue;
+      const n = 2 ** z;
+      const tx = (lon) => Math.floor(((lon + 180) / 360) * n);
+      const ty = (lat) => {
+        const r = (lat * Math.PI) / 180;
+        return Math.floor(((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n);
+      };
+      for (let x = tx(t.lon - d * 2); x <= tx(t.lon + d * 2); x++)
+        for (let y = ty(t.lat + d); y <= ty(t.lat - d); y++)
+          urls.push(im.detailUrl.replace("{z}", z).replace("{x}", x).replace("{y}", y));
+    }
+    let i = 0;
+    const next = () => {
+      if (i >= urls.length) return;
+      const img = new Image();
+      img.onload = img.onerror = next;
+      img.src = urls[i++];
+    };
+    for (let k = 0; k < 6; k++) next();
   }
 
   function updateFooter() {
@@ -274,19 +311,87 @@
     }
   }
 
-  // ---------- Näppäimet ----------
+  // ---------- Valikko ja näppäimet ----------
+  function setDaily(on) {
+    if (!dailyLayer) return;
+    dailyLayer.show = on;
+    updateFooter();
+    updatePanel();
+  }
+  function setOffline(on) {
+    const u = new URL(location.href);
+    if (on) u.searchParams.set("offline", ""); else u.searchParams.delete("offline");
+    location.href = u.toString().replace("offline=", "offline");
+  }
+  function toggleFullscreen() {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(() => {});
+  }
+  const actions = {
+    online: () => setOffline(false),
+    offline: () => setOffline(true),
+    clear: () => setDaily(false),
+    daily: () => setDaily(true),
+    hq: () => { light = false; applyQuality(); updatePanel(); },
+    lite: () => { light = true; applyQuality(); updatePanel(); },
+    pause: () => { paused = !paused; updatePanel(); },
+    restart: () => { paused = false; run(); updatePanel(); },
+    fullscreen: toggleFullscreen,
+  };
+  function updatePanel() {
+    const on = {
+      online: mode === "online",
+      offline: mode !== "online",
+      clear: !(dailyLayer && dailyLayer.show),
+      daily: !!(dailyLayer && dailyLayer.show),
+      hq: !light,
+      lite: light,
+      pause: paused,
+    };
+    ui.panel.querySelectorAll("button[data-act]").forEach((b) => {
+      const a = b.dataset.act;
+      if (a in on) b.setAttribute("aria-pressed", String(on[a]));
+      if (a === "daily") {
+        b.disabled = !dailyLayer;
+        b.title = dailyLayer ? `NASA VIIRS ${fiDate(dailyDateIso)}` : "Ei saatavilla tässä tilassa";
+      }
+    });
+    ui.panel.querySelector('[data-act="pause"]').textContent = paused ? "Jatka" : "Tauko";
+  }
+  ui.panel.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-act]");
+    if (!b) return;
+    actions[b.dataset.act]();
+    b.blur();
+  });
+
   window.addEventListener("keydown", (e) => {
     const k = e.key.toLowerCase();
-    if (k === " ") { paused = !paused; e.preventDefault(); }
-    else if (k === "r") run();
-    else if (k === "d" && dailyLayer) { dailyLayer.show = !dailyLayer.show; updateFooter(); }
-    else if (k === "f") {
-      if (document.fullscreenElement) document.exitFullscreen();
-      else document.documentElement.requestFullscreen().catch(() => {});
-    } else if (k === "h") ui.hint.classList.toggle("show");
-    else if (k === "p") scene.debugShowFramesPerSecond = !scene.debugShowFramesPerSecond;
+    if (k === " ") { actions.pause(); e.preventDefault(); }
+    else if (k === "r") actions.restart();
+    else if (k === "d" && dailyLayer) setDaily(!dailyLayer.show);
+    else if (k === "f") toggleFullscreen();
+    else if (k === "h") ui.panel.classList.toggle("hidden");
   });
-  setTimeout(() => ui.hint.classList.remove("show"), 8000);
+
+  // Hiiren osoitin piiloon, kun hiirtä ei liikuteta
+  let idleTimer;
+  window.addEventListener("mousemove", () => {
+    document.body.classList.remove("idle");
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => document.body.classList.add("idle"), 3000);
+  });
+
+  // Ruudunpäivitysnopeus
+  let frames = 0, fpsT = performance.now();
+  (function countFps(now) {
+    frames++;
+    if (now - fpsT >= 1000) {
+      ui.fps.textContent = `${Math.round((frames * 1000) / (now - fpsT))} FPS`;
+      frames = 0; fpsT = now;
+    }
+    requestAnimationFrame(countFps);
+  })(fpsT);
 
   // Testejä varten
   window.__globe = { viewer, run, get mode() { return mode; } };

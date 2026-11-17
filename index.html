@@ -24,9 +24,41 @@
     <span id="source" class="source"></span>
   </footer>
 
-  <div id="hint" class="hint show">
-    Välilyönti = tauko · R = alusta · D = päivän satelliittikuva · F = koko näyttö · P = FPS-mittari · H = ohje
-  </div>
+  <nav id="panel" class="panel" aria-label="Katselutavat">
+    <div class="row">
+      <span class="lbl">Lähde</span>
+      <div class="seg">
+        <button type="button" data-act="online" title="Kuvat haetaan suoraan NASAn ja Copernicuksen palveluista">Verkko</button>
+        <button type="button" data-act="offline" title="Vain paikalliset tiedostot (kansio tiles/)">Offline</button>
+      </div>
+    </div>
+    <div class="row">
+      <span class="lbl">Kuva</span>
+      <div class="seg">
+        <button type="button" data-act="clear" title="Pilvetön kuvakooste">Pilvetön</button>
+        <button type="button" data-act="daily">Eilinen</button>
+      </div>
+    </div>
+    <div class="row">
+      <span class="lbl">Laatu</span>
+      <div class="seg">
+        <button type="button" data-act="hq" title="Näytön täysi tarkkuus">Tarkka</button>
+        <button type="button" data-act="lite" title="Kevyempi heikoille koneille">Kevyt</button>
+      </div>
+    </div>
+    <div class="row">
+      <span class="lbl">Esitys</span>
+      <div class="seg">
+        <button type="button" data-act="pause">Tauko</button>
+        <button type="button" data-act="restart">Alusta</button>
+        <button type="button" data-act="fullscreen">Koko näyttö</button>
+      </div>
+    </div>
+    <div class="row meta">
+      <span id="fps" class="fps">– FPS</span>
+      <span class="keys">H piilottaa valikon</span>
+    </div>
+  </nav>
 
   <script src="vendor/cesium/Cesium.js"></script>
   <script src="js/config.js"></script>

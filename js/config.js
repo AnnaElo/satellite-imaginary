@@ -49,8 +49,9 @@ window.GLOBE_CONFIG = {
     detailMaxLevel: 15,
 
     // Päivittäinen satelliittikuva (NASA GIBS, VIIRS NOAA-20). {time} = eilinen päivä (UTC).
+    // PNG, jotta kuvaamattomat alueet (yö, ratojen välit) ovat läpinäkyviä ja pohjakuva näkyy niiden alta.
     dailyUrl:
-      "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/{time}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",
+      "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/{time}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
     dailyMaxLevel: 9,
     dailyDaysBack: 1,
     showDailyAtStart: false,

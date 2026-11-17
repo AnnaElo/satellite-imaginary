@@ -13,22 +13,29 @@ Toimii sellaisenaan staattisena sivuna (esim. GitHub Pages). Kuvat haetaan suora
    python tools/lataa_tiilet.py --daily
    ```
    Lataa noin 6 500 tiiltä (pohjakuva, Suomi ja Oulu tarkkana, `--daily` lisää eilisen päiväkuvan). Keskeytyneen latauksen voi ajaa uudelleen, jo ladatut ohitetaan.
-2. **Tapahtumassa** tuplaklikkaa `Käynnistä (Windows).bat` tai `Käynnistä (Mac).command`. Selain avautuu ja esitys käyttää vain paikallisia tiedostoja. Paina F, niin esitys menee koko näytölle.
+2. **Tapahtumassa** tuplaklikkaa `Käynnistä (Windows).bat` tai `Käynnistä (Mac).command`. Selain avautuu ja esitys käyttää vain paikallisia tiedostoja. Paina F, niin esitys menee koko näytölle, ja H, jos haluat piilottaa valikon.
 
 Selain ei aja 3D-moottoria suoraan tiedostosta, joten käynnistystiedosto avaa pienen paikallisen palvelimen (Windowsissa PowerShell, Macissa Python). Mitään ei tarvitse asentaa.
 
 `?kevyt` osoitteen perässä kevyempi tila heikoille koneille. `?offline` osoitteen perässä pakottaa offline-tilan. Ilman ladattuja tiiliä offline-tila näyttää Cesiumin mukana tulevan Natural Earth -kartan.
 
-## Näppäimet
+## Valikko ja näppäimet
+
+Oikeassa yläkulmassa on valikko, josta valitaan katselutapa:
+
+- **Lähde:** Verkko (kuvat suoraan NASAlta ja Copernicukselta) tai Offline (vain kansion `tiles/` kuvat)
+- **Kuva:** Pilvetön kuvakooste tai eilinen satelliittikuva (NASA VIIRS, pilvineen)
+- **Laatu:** Tarkka (näytön täysi tarkkuus) tai Kevyt (heikoille koneille)
+- **Esitys:** Tauko, Alusta, Koko näyttö
+- Ruudunpäivitysnopeus (FPS) näkyy valikon alareunassa
 
 | Näppäin | Toiminto |
 |---|---|
 | Välilyönti | Tauko / jatka |
 | R | Aloita alusta |
-| D | Päivän satelliittikuva päälle / pois |
+| D | Eilinen satelliittikuva päälle / pois |
 | F | Koko näyttö |
-| P | FPS-mittari |
-| H | Näytä ohje |
+| H | Piilota / näytä valikko |
 
 ## Asetukset
 

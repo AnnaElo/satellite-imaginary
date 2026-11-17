@@ -7,7 +7,8 @@
   --font: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
-body { font-family: var(--font); color: var(--ink); cursor: none; }
+body { font-family: var(--font); color: var(--ink); }
+body.idle, body.idle * { cursor: none !important; }
 #globe { position: absolute; inset: 0; }
 .cesium-viewer-bottom, .cesium-widget-credits { display: none !important; }
 
@@ -41,12 +42,29 @@ body { font-family: var(--font); color: var(--ink); cursor: none; }
 .mode[data-mode="fallback"] { color: var(--accent); border-color: var(--accent); }
 .source { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.hint {
-  position: absolute; top: 12px; right: 16px; font-size: 12px; color: var(--muted);
-  background: var(--panel); padding: 6px 10px; opacity: 0; transition: opacity 0.6s; pointer-events: none;
+.panel {
+  position: absolute; top: 12px; right: 12px; z-index: 5;
+  display: grid; gap: 6px; padding: 10px 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  font-size: 12px; color: var(--muted);
+  transition: opacity 0.4s ease;
 }
-.hint.show { opacity: 1; }
+.panel.hidden { opacity: 0; pointer-events: none; }
+.panel .row { display: grid; grid-template-columns: 52px auto; align-items: center; gap: 8px; }
+.panel .lbl { text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; }
+.panel .seg { display: flex; gap: 2px; }
+.panel button {
+  font: inherit; color: var(--ink); background: rgba(255, 255, 255, 0.06);
+  border: 1px solid transparent; padding: 4px 10px; cursor: pointer; border-radius: 3px;
+}
+.panel button:hover { background: rgba(255, 255, 255, 0.14); }
+.panel button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.panel button[aria-pressed="true"] { background: rgba(255, 209, 102, 0.18); border-color: var(--accent); color: var(--accent); }
+.panel button:disabled { opacity: 0.35; cursor: not-allowed; }
+.panel .meta { grid-template-columns: auto auto; justify-content: space-between; font-size: 11px; }
+.panel .fps { font-variant-numeric: tabular-nums; color: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) {
-  .phase, .card, .hint { transition: none; }
+  .phase, .card, .panel { transition: none; }
 }

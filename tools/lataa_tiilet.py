@@ -30,8 +30,8 @@ def layers(daily_date):
     if daily_date:
         out.insert(1, dict(name="daily", date=daily_date,
                            url=GIBS + "/VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/" + daily_date
-                           + "/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",
-                           levels=range(0, 6), bounds=None))
+                           + "/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
+                           levels=range(0, 6), bounds=None, ext="png"))
     return out
 
 
@@ -84,7 +84,7 @@ def main():
             for x in xs:
                 for y in ys:
                     url = L["url"].format(z=z, x=x, y=y)
-                    jobs.append((url, os.path.join(TILES, L["name"], str(z), str(x), f"{y}.jpg")))
+                    jobs.append((url, os.path.join(TILES, L["name"], str(z), str(x), f"{y}.{L.get('ext', 'jpg')}")))
                     count += 1
         print(f"{L['name']:8s} tasot {L['levels'].start}-{L['levels'].stop - 1}: {count} tiiltä")
         entry = dict(name=L["name"], minLevel=L["levels"].start, maxLevel=L["levels"].stop - 1)
@@ -92,6 +92,8 @@ def main():
             entry["bounds"] = list(L["bounds"])
         if L.get("date"):
             entry["date"] = L["date"]
+        if L.get("ext"):
+            entry["ext"] = L["ext"]
         manifest.append(entry)
     print(f"Yhteensä {len(jobs)} tiiltä")
     if a.dry_run:

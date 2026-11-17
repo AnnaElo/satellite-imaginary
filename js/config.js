@@ -4,7 +4,8 @@ window.GLOBE_CONFIG = {
   texts: {
     title: "FINverse · Ouluversumi",
     subtitle: "Linnanmaa campus, University of Oulu",
-    marker: "Linnanmaa campus",
+    markerApproach: "Oulu",          // merkin teksti lennon aikana
+    marker: "Linnanmaa campus",      // teksti, kun kamera on pysähtynyt kampukselle
     phaseEpic: "Earth today",
     phaseEarth: "Earth from space",
     phaseFinland: "Finland",

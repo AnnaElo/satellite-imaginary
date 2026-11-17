@@ -88,7 +88,7 @@
   if (scene.sun) scene.sun.show = false;
 
   // Linnanmaan kampuksen merkki näkyy vasta lähempänä
-  viewer.entities.add({
+  const marker = viewer.entities.add({
     position: Cesium.Cartesian3.fromDegrees(C.target.lon, C.target.lat),
     point: {
       pixelSize: 12,
@@ -99,7 +99,7 @@
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
     },
     label: {
-      text: C.texts.marker,
+      text: C.texts.markerApproach || C.texts.marker,
       font: "600 22px system-ui, 'Segoe UI', sans-serif",
       fillColor: Cesium.Color.WHITE,
       outlineColor: Cesium.Color.fromCssColorString("#0b1a2e"),
@@ -110,6 +110,11 @@
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
     },
   });
+
+  // Merkissä lukee "Oulu" lennon ajan ja "Linnanmaa campus", kun kamera on pysähtynyt kampukselle
+  function setMarker(text) {
+    marker.label.text = text;
+  }
 
   // ---------- Kuvatasot ----------
   let mode = "online";
@@ -297,6 +302,7 @@
     camera.cancelFlight();
     ui.card.classList.remove("show");
     ui.aerialCap.classList.remove("show");
+    setMarker(C.texts.markerApproach || C.texts.marker);
     camera.setView({ destination: spinStartPosition(), orientation: lookDown });
 
     while (id === runId) {
@@ -329,11 +335,13 @@
       const h = aerial ? C.heights.target : C.heights.targetNoAerial;
       const tv = viewOf(C.target.lat, C.target.lon, h, C.targetPitchDeg);
       if (!(await fly(tv.destination, T.flyToTarget, tv.orientation, id))) return;
+      setMarker(C.texts.marker);
       ui.card.classList.add("show");
       if (aerial) ui.aerialCap.classList.add("show");
       if (!(await wait(T.holdTarget, id))) return;
       ui.card.classList.remove("show");
       ui.aerialCap.classList.remove("show");
+      setMarker(C.texts.markerApproach || C.texts.marker);
 
       // 4. Takaisin avaruuteen ja alusta
       setPhase(null);

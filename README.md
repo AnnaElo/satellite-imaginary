@@ -2,17 +2,22 @@
 
 Pyörivä 3D-maapallo, joka lentää automaattisesti Suomeen ja Ouluun. Tehty FINverse- ja Ouluversumi-hankkeiden esittelyyn.
 
-## Käynnistys
+## Verkkoversio
 
-Sivu tarvitsee pienen paikallisen palvelimen (selain ei aja 3D-moottorin työsäikeitä suoraan tiedostosta):
+Toimii sellaisenaan staattisena sivuna (esim. GitHub Pages). Kuvat haetaan suoraan NASAn ja Copernicuksen avoimista palveluista.
 
-```
-python -m http.server 8000
-```
+## Offline-versio tapahtumaan
 
-ja avaa selaimessa http://localhost:8000. Verkkoversio toimii sellaisenaan esim. GitHub Pagesissa.
+1. **Kun verkko on käytössä** (esim. edellisenä päivänä), lataa kuvatiilet:
+   ```
+   python tools/lataa_tiilet.py --daily
+   ```
+   Lataa noin 6 500 tiiltä (pohjakuva, Suomi ja Oulu tarkkana, `--daily` lisää eilisen päiväkuvan). Keskeytyneen latauksen voi ajaa uudelleen, jo ladatut ohitetaan.
+2. **Tapahtumassa** tuplaklikkaa `Käynnistä (Windows).bat` tai `Käynnistä (Mac).command`. Selain avautuu ja esitys käyttää vain paikallisia tiedostoja. Paina F, niin esitys menee koko näytölle.
 
-`?offline` osoitteen perässä pakottaa offline-tilan.
+Selain ei aja 3D-moottoria suoraan tiedostosta, joten käynnistystiedosto avaa pienen paikallisen palvelimen (Windowsissa PowerShell, Macissa Python). Mitään ei tarvitse asentaa.
+
+`?offline` osoitteen perässä pakottaa offline-tilan. Ilman ladattuja tiiliä offline-tila näyttää Cesiumin mukana tulevan Natural Earth -kartan.
 
 ## Näppäimet
 

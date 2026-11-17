@@ -1,0 +1,1 @@
+Offline-tiilet tulevat tähän kansioon. Lataa ne: python tools/lataa_tiilet.py

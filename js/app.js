@@ -61,17 +61,29 @@
     selectionIndicator: false,
     creditContainer: document.createElement("div"),
     requestRenderMode: false,
-    msaaSamples: 4,
+    msaaSamples: 1,
+    // Piirretään näytön todellisella tarkkuudella (Cesium piirtää oletuksena CSS-pikseleinä,
+    // mikä näyttää sumealta tarkoilla näytöillä).
+    useBrowserRecommendedResolution: false,
+    contextOptions: { webgl: { powerPreference: "high-performance", antialias: false } },
   });
   const scene = viewer.scene;
   const camera = viewer.camera;
+  // Tarkkuus: ?kevyt = kevyempi tila heikoille koneille. Muuten enintään 2x näytön tiheys.
+  const light = params.has("kevyt");
+  const dpr = window.devicePixelRatio || 1;
+  viewer.resolutionScale = light ? 1 / dpr : Math.min(dpr, 2) / dpr;
+  scene.postProcessStages.fxaa.enabled = true;
+  scene.fog.enabled = true;
   scene.globe.enableLighting = false;
   scene.globe.showGroundAtmosphere = true;
-  scene.globe.maximumScreenSpaceError = 1.5;
-  scene.globe.tileCacheSize = 400;
+  scene.globe.maximumScreenSpaceError = light ? 3 : 2;
+  scene.globe.tileCacheSize = 1000;
+  scene.globe.preloadSiblings = true;
   scene.globe.baseColor = Cesium.Color.fromCssColorString("#0b1a2e");
   scene.screenSpaceCameraController.enableInputs = false; // esitys ei reagoi hiireen
   if (scene.moon) scene.moon.show = false;
+  if (scene.sun) scene.sun.show = false;
 
   // Oulun merkki näkyy vasta lähempänä
   viewer.entities.add({
@@ -199,7 +211,14 @@
   // Aloituspaikka valitaan niin, että pyöriminen päättyy täsmälleen Oulun pituuspiirille.
   function spinStartPosition() {
     const lon = C.target.lon + C.spinDegPerSec * C.timing.spin;
-    return Cesium.Cartesian3.fromDegrees(lon, 28, C.heights.space);
+    return Cesium.Cartesian3.fromDegrees(lon, 28, spaceHeight());
+  }
+  // Korkeus, jolla maapallo täyttää halutun osan näytön korkeudesta (näytön muodosta riippumatta).
+  function spaceHeight() {
+    const R = 6371000;
+    const fovy = camera.frustum.fovy || Cesium.Math.toRadians(40);
+    const fill = C.globeFill || 0.72;
+    return R / Math.sin((fovy / 2) * fill) - R;
   }
   const lookDown = { heading: 0, pitch: -Cesium.Math.PI_OVER_TWO, roll: 0 };
 
@@ -265,6 +284,7 @@
       if (document.fullscreenElement) document.exitFullscreen();
       else document.documentElement.requestFullscreen().catch(() => {});
     } else if (k === "h") ui.hint.classList.toggle("show");
+    else if (k === "p") scene.debugShowFramesPerSecond = !scene.debugShowFramesPerSecond;
   });
   setTimeout(() => ui.hint.classList.remove("show"), 8000);
 

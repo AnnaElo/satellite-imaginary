@@ -26,9 +26,11 @@ window.GLOBE_CONFIG = {
   // Pyörimisnopeus (astetta sekunnissa)
   spinDegPerSec: 6,
 
+  // Kuinka suuren osan näytön korkeudesta maapallo täyttää avaruusnäkymässä (0–1)
+  globeFill: 0.72,
+
   // Kameran korkeudet metreinä
   heights: {
-    space: 22000000,
     finland: 1800000,
     oulu: 18000,
   },

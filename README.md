@@ -17,7 +17,7 @@ Toimii sellaisenaan staattisena sivuna (esim. GitHub Pages). Kuvat haetaan suora
 
 Selain ei aja 3D-moottoria suoraan tiedostosta, joten käynnistystiedosto avaa pienen paikallisen palvelimen (Windowsissa PowerShell, Macissa Python). Mitään ei tarvitse asentaa.
 
-`?offline` osoitteen perässä pakottaa offline-tilan. Ilman ladattuja tiiliä offline-tila näyttää Cesiumin mukana tulevan Natural Earth -kartan.
+`?kevyt` osoitteen perässä kevyempi tila heikoille koneille. `?offline` osoitteen perässä pakottaa offline-tilan. Ilman ladattuja tiiliä offline-tila näyttää Cesiumin mukana tulevan Natural Earth -kartan.
 
 ## Näppäimet
 
@@ -27,6 +27,7 @@ Selain ei aja 3D-moottoria suoraan tiedostosta, joten käynnistystiedosto avaa p
 | R | Aloita alusta |
 | D | Päivän satelliittikuva päälle / pois |
 | F | Koko näyttö |
+| P | FPS-mittari |
 | H | Näytä ohje |
 
 ## Asetukset

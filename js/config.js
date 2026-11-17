@@ -30,8 +30,9 @@ window.GLOBE_CONFIG = {
       ["Daylight today", "{daylight}"],
     ],
     analysis:
-      "European Capital of Culture 2026. Home of the University of Oulu (est. 1958) " +
-      "and a northern hub for wireless, 6G and extended reality research.",
+      "European Capital of Culture 2026. A northern hub for wireless technology, 6G, drones, " +
+      "health technology, audiovisual production, and virtual production—which also includes " +
+      "research into extended and immersive reality.",
     source: "Source: Wikipedia",
   },
 
@@ -41,7 +42,6 @@ window.GLOBE_CONFIG = {
   campusInfo: {
     name: "Linnanmaa campus",
     data: [
-      ["Location", "65°04′N, 25°28′E"],
       ["Home to", "Oamk and the University of Oulu"],
       ["Oamk founded", "1996"],
       ["Oamk fields", "Business · Engineering · Health and Social Care · ICT · Media and Performing Arts · Natural Resources"],
@@ -53,7 +53,8 @@ window.GLOBE_CONFIG = {
   },
 
   // Kohde: Oulun yliopiston Linnanmaan kampus
-  target: { lat: 65.0592, lon: 25.4664 },
+  // Koordinaatit: Wikipedia, "University of Oulu" (65°03′33″N 025°27′58″E)
+  target: { lat: 65.05917, lon: 25.46611, label: "65°03′33″N · 25°27′58″E" },
   finland: { lat: 64.6, lon: 26.0 },
 
   // Ajoitukset sekunteina

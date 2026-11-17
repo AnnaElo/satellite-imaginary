@@ -525,7 +525,7 @@
   // Testejä varten
   window.__globe = { viewer, run, get mode() { return mode; }, get aerial() { return aerial; } };
 
-  ui.card.querySelector(".eyebrow").textContent =
+  ui.card.querySelector(".eyebrow").textContent = C.target.label ||
     `${fmtCoord(C.target.lat, "N", "S")} · ${fmtCoord(C.target.lon, "E", "W")}`;
   ui.card.querySelector(".title").textContent = C.texts.title;
   ui.card.querySelector(".sub").textContent = C.texts.subtitle;

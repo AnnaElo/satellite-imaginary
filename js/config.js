@@ -102,7 +102,10 @@ window.GLOBE_CONFIG = {
     url: "https://avoin-karttakuva.maanmittauslaitos.fi/avoin/wmts/1.0.0/ortokuva/default/WGS84_Pseudo-Mercator/{z}/{y}/{x}.jpg?api-key={key}",
     minLevel: 11,
     maxLevel: 16, // avoin palvelu tarjoaa Pseudo-Mercator-tasot 0–16
-    bounds: [25.2, 64.95, 25.75, 65.15], // länsi, etelä, itä, pohjoinen
+    bounds: [24.6, 64.75, 26.4, 65.4], // länsi, etelä, itä, pohjoinen (reunat jäävät kuvan ulkopuolelle)
+    // Ilmakuva häivytetään esiin vasta lähellä, jotta sen reuna ja eri värisävy eivät erotu (metreinä)
+    fadeFrom: 22000,
+    fadeTo: 7000,
     caption: "Aerial photo · National Land Survey of Finland",
     year: "", // kuvausvuosi, jos tiedossa (esim. "2024")
   },

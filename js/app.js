@@ -202,6 +202,7 @@
   // ---------- Kuvatasot ----------
   let mode = "online";
   let aerial = false; // onko Maanmittauslaitoksen ilmakuva käytössä
+  const aerialLayers = [];
 
   async function setupImagery() {
     const im = C.imagery;
@@ -221,9 +222,9 @@
         const ok = await probe(testUrl, 8000, true, false);
         if (!ok) console.warn("Aerial photo not available:", testUrl, "(no-CORS test:", await probe(testUrl, 8000, false, false), ")");
         if (ok) {
-          layers.addImageryProvider(
+          aerialLayers.push(layers.addImageryProvider(
             wmLayer(url, a.minLevel, a.maxLevel, Cesium.Rectangle.fromDegrees(...a.bounds))
-          );
+          ));
           aerial = true;
         }
       }
@@ -232,10 +233,10 @@
       for (const l of LOCAL.layers) {
         if (l.group === "daily") continue; // vanhat latauspaketit
         const rect = l.bounds ? Cesium.Rectangle.fromDegrees(...l.bounds) : undefined;
-        layers.addImageryProvider(
+        const layer = layers.addImageryProvider(
           wmLayer(`tiles/${l.name}/{z}/{x}/{y}.${l.ext || "jpg"}`, l.minLevel, l.maxLevel, rect)
         );
-        if (l.name === "aerial") aerial = true;
+        if (l.name.startsWith("aerial")) { aerial = true; aerialLayers.push(layer); }
       }
     } else {
       mode = "fallback";
@@ -379,6 +380,12 @@
     const dt = (now - (scene._lastSpin || now)) / 1000;
     scene._lastSpin = now;
     placeInfo();
+    // Ilmakuva näkyy vain lähellä maata: häivytys korkeuden mukaan
+    if (aerialLayers.length) {
+      const a = C.aerial, h = camera.positionCartographic.height;
+      const alpha = Cesium.Math.clamp((a.fadeFrom - h) / (a.fadeFrom - a.fadeTo), 0, 1);
+      for (const l of aerialLayers) { l.alpha = alpha; l.show = alpha > 0.001; }
+    }
     if (spinning && !paused && dt < 0.5) {
       // Kamera kiertää länteen, jolloin maapallo näyttää pyörivän oikeaan suuntaan.
       camera.rotate(Cesium.Cartesian3.UNIT_Z, -Cesium.Math.toRadians(C.spinDegPerSec * dt));

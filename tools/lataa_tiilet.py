@@ -22,6 +22,7 @@ OULU = (24.7, 64.75, 26.2, 65.25)
 
 NLS = "https://avoin-karttakuva.maanmittauslaitos.fi/avoin/wmts/1.0.0/ortokuva/default/WGS84_Pseudo-Mercator"
 LINNANMAA = (25.40, 65.03, 25.53, 65.085)
+OULU_AERIAL = (25.15, 64.93, 25.80, 65.18)
 
 
 def layers(nls_key):
@@ -33,8 +34,12 @@ def layers(nls_key):
     ]
     if nls_key:
         # Maanmittauslaitoksen uusin ortokuva (ilmakuva) Linnanmaalta
-        out.append(dict(name="aerial", url=NLS + "/{z}/{y}/{x}.jpg?api-key=" + urllib.parse.quote(nls_key),
-                        levels=range(12, 17), bounds=LINNANMAA))
+        key = urllib.parse.quote(nls_key)
+        # Laajempi alue karkeammilla tasoilla, jotta ilmakuvan reuna ei näy häivytyksen aikana
+        out.append(dict(name="aerial-wide", url=NLS + "/{z}/{y}/{x}.jpg?api-key=" + key,
+                        levels=range(11, 14), bounds=OULU_AERIAL))
+        out.append(dict(name="aerial", url=NLS + "/{z}/{y}/{x}.jpg?api-key=" + key,
+                        levels=range(14, 17), bounds=LINNANMAA))
     return out
 
 

@@ -54,6 +54,8 @@ window.GLOBE_CONFIG = {
       "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/{time}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
     dailyMaxLevel: 9,
     dailyDaysBack: 1,
+    // Kuinka tummat pikselit tulkitaan kuvaamattomiksi (0–1). Nosta, jos reunoille jää tummaa.
+    dailyBlackThreshold: 0.06,
     showDailyAtStart: false,
   },
 };

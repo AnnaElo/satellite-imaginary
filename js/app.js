@@ -149,7 +149,13 @@
       layers.addImageryProvider(provider);
     }
 
-    if (dailyLayer) dailyLayer.show = im.showDailyAtStart;
+    if (dailyLayer) {
+      // NASA palauttaa kuvaamattomat alueet (yöpuoli, ratojen välit) mustina.
+      // Muutetaan musta läpinäkyväksi, jolloin pilvetön pohjakuva näkyy niiden alta.
+      dailyLayer.colorToAlpha = Cesium.Color.BLACK;
+      dailyLayer.colorToAlphaThreshold = im.dailyBlackThreshold ?? 0.06;
+      dailyLayer.show = im.showDailyAtStart;
+    }
     updateFooter();
     updatePanel();
     if (mode === "online") preloadOulu();

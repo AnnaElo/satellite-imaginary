@@ -2,8 +2,8 @@
 window.GLOBE_CONFIG = {
   // Tekstit, jotka näytetään esityksen aikana
   texts: {
-    title: "FINverse · Ouluversumi",
-    subtitle: "Linnanmaa campus, University of Oulu",
+    title: "FINverse Project",
+    subtitle: "Status: Ongoing until November 30, 2026.",
     markerApproach: "Oulu",          // merkin teksti lennon aikana
     marker: "Linnanmaa campus",      // teksti, kun kamera on pysähtynyt kampukselle
     phaseEpic: "Earth today",
@@ -40,14 +40,11 @@ window.GLOBE_CONFIG = {
       ["Location", "65°04′N, 25°28′E"],
       ["Home to", "Oamk and the University of Oulu"],
       ["Oamk founded", "1996"],
-      ["Oamk students", "≈ 9,000"],
-      ["Oamk staff", "460"],
       ["Oamk fields", "Business · Engineering · Health and Social Care · ICT · Media and Performing Arts · Natural Resources"],
     ],
     analysis:
       "Oamk's main campus, Oulu Campus Linnanmaa, is described as the largest campus in Europe " +
-      "under one roof. Oamk's research focuses on low-carbon solutions, digital solutions and " +
-      "business development, with particular investment in drone technology.",
+      "under one roof with the University of Oulu.",
     source: "Sources: Oamk, UArctic",
   },
 
